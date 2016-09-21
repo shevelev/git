@@ -67,7 +67,7 @@ BEGIN TRY
 		print 'удаляем двойные кавычки'
 		update #da_sku 
 		set 
-		descr = replace(replace(descr,'"','`'),'''','`')
+		descr = replace(replace(descr,'"',''),'''','')
 		
 
 		set @msg_errdetails1 = ''
@@ -456,7 +456,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[spb-sql1201].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
+		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
 			join #da_sku d on d.sku = s.ItemID
 			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.Dataareaid
 		where	s.status = '5'			
@@ -487,7 +487,7 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1201].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
+		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
 			join #da_sku d on  d.sku = s.ItemID
 			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.Dataareaid
 		where	s.status = '5'
