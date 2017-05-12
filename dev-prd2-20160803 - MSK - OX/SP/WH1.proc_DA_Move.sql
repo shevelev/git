@@ -1,5 +1,3 @@
-
-
 ALTER PROCEDURE [WH1].[proc_DA_Move](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
@@ -86,6 +84,10 @@ into	#lo
 from	wh1.LOC l
 
 
+	INSERT INTO DA_InboundErrorsLog (source,msg_errdetails) 
+	SELECT 'MOVE-WH1', GETDATE()
+
+
 --select *
 --into	#task
 --from	wh1.TASKDETAIL t
@@ -137,7 +139,7 @@ from	wh1.TRANSMITLOG t
 	    on w2.zone = l2.putawayzone
 	--join wh1.LOT l3
 	--    on l3.LOT = i.LOT
-where	t.TRANSMITLOGKEY = @transmitlogkey
+where	t.TRANSMITLOGKEY = @transmitlogkey and i.QTY>0
 	--and w.sklad <> w2.sklad
 	
 	update r       --------=========== Обновление СД, при перемещение из ячеек приемки(Склад продаж) в зону СД ============-------------
@@ -286,8 +288,8 @@ else
 			orderedqty,
 			inventlocationid,
 			corrinventlocationid,
-			inventbatchid,
-			corrinventbatchid,
+			--inventbatchid,
+			--corrinventbatchid,
 			inventserialid,
 			corrinventserialid
 		)
@@ -307,8 +309,8 @@ else
 			orderedqty,
 			inventlocationid,
 			corrinventlocationid,
-			inventbatchid,
-			corrinventbatchid,
+			--inventbatchid,
+			--corrinventbatchid,
 			inventserialid,
 			corrinventserialid
 		from	#q
@@ -490,10 +492,10 @@ declare @n bigint
 
 
 select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 
 
-insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 (DataAReaID, inventjournalnameid, transdate, inventjournalid, inventjournaltype,
  mastersystem,Status,RecID)
 
@@ -512,10 +514,10 @@ if @@ERROR = 0
 begin	    
 	    
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
 
 
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
     (DataAReaID, inventjournalid, transdate,ItemID, manufacturedatefrom,manufacturedateto,inventexpiredate,corrinventexpiredate,
     OrderedQty,inventlocationid,corrinventlocationid,
     InventBatchID,corrinventbatchid,InventSerialID,corrinventserialid,mastersystem,Status,RecID)
@@ -569,5 +571,4 @@ from	#resultall
 IF OBJECT_ID('tempdb..#resultall') IS NOT NULL DROP TABLE #resultall
 IF OBJECT_ID('tempdb..#resulthead') IS NOT NULL DROP TABLE #resulthead
 IF OBJECT_ID('tempdb..#resultdetail') IS NOT NULL DROP TABLE #resultdetail
-
 

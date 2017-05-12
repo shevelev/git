@@ -1,13 +1,5 @@
 
-
-
-/****************************************************************************************/
-
-
------ [SPB-DAXDEV] - test server
------ [SPB-SQL1210DBE\MSSQLDBE] - real server
-
-ALTER PROCEDURE [WH2].[proc_DA_ReceiptConfirm]
+ALTER PROCEDURE [wh2].[proc_DA_ReceiptConfirm]
 	@wh varchar(30),
 	@transmitlogkey varchar (10)
 
@@ -15,1641 +7,641 @@ as
 --############################################################### ПОДТВЕРЖДЕНИЕ ПУО
 set nocount on
 
---return
 
---declare @sql varchar(max)
---, @wh varchar(30),
---@transmitlogkey varchar (10)
-
---set @wh = 'wmwhse1'
---set @transmitlogkey = '0000001020'
-
---declare	@Hours int = 5
-
-
-
-print '-- выбор необработанного подтверждения о приемке, формирование выходного датасета'
-
-
-	    
-	    
-CREATE TABLE [#rt](
-	[filetype] [nvarchar](16) COLLATE Cyrillic_General_CI_AS NULL,	
-	[EXTERNPOKEY] [nvarchar](32) COLLATE Cyrillic_General_CI_AS NULL,	
-	[potype] [nvarchar](10) COLLATE Cyrillic_General_CI_AS NULL,	
-	[SELLERNAME] [nvarchar](15) COLLATE Cyrillic_General_CI_AS NULL,
-	[BUYERADDRESS4] [nvarchar](100) COLLATE Cyrillic_General_CI_AS NULL,	
-	[susr2] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL,	
-	[sku] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[storerkey] [nvarchar](15) COLLATE Cyrillic_General_CI_AS NULL,		
-	[EXTERNLINENO] [nvarchar](5) COLLATE Cyrillic_General_CI_AS NULL,
-	[QTYORDERED] [nvarchar](20) COLLATE Cyrillic_General_CI_AS NULL,
-	[qtyreceived] [nvarchar](20) COLLATE Cyrillic_General_CI_AS NULL,	
-	[ALTSKU] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL,
-	[susr4] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL,
-	[LOTTABLE01] [nvarchar](40) COLLATE Cyrillic_General_CI_AS NULL,
-	[LOTTABLE02] [nvarchar](40) COLLATE Cyrillic_General_CI_AS NULL,	
-	[lottable04] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[lottable05] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[lottable06] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL	
-	)
-	
-	    
-CREATE TABLE [#rt2](
-	[filetype] [nvarchar](16) COLLATE Cyrillic_General_CI_AS NULL,	
-	[EXTERNPOKEY] [nvarchar](32) COLLATE Cyrillic_General_CI_AS NULL,	
-	[potype] [nvarchar](10) COLLATE Cyrillic_General_CI_AS NULL,	
-	[SELLERNAME] [nvarchar](15) COLLATE Cyrillic_General_CI_AS NULL,
-	[BUYERADDRESS4] [nvarchar](100) COLLATE Cyrillic_General_CI_AS NULL,	
-	[susr2] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL	
-	)
-	
-	    
-CREATE TABLE [#rt3](
-	[filetype] [nvarchar](16) COLLATE Cyrillic_General_CI_AS NULL,	
-	[EXTERNPOKEY] [nvarchar](32) COLLATE Cyrillic_General_CI_AS NULL,		
-	[sku] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[storerkey] [nvarchar](15) COLLATE Cyrillic_General_CI_AS NULL,		
-	[EXTERNLINENO] [nvarchar](5) COLLATE Cyrillic_General_CI_AS NULL,
-	[QTYORDERED] [nvarchar](20) COLLATE Cyrillic_General_CI_AS NULL,
-	[qtyreceived] [nvarchar](20) COLLATE Cyrillic_General_CI_AS NULL,	
-	[ALTSKU] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL,
-	[susr4] [nvarchar](30) COLLATE Cyrillic_General_CI_AS NULL,
-	[LOTTABLE01] [nvarchar](40) COLLATE Cyrillic_General_CI_AS NULL,
-	[LOTTABLE02] [nvarchar](40) COLLATE Cyrillic_General_CI_AS NULL,	
-	[lottable04] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[lottable05] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL,
-	[lottable06] [nvarchar](50) COLLATE Cyrillic_General_CI_AS NULL	
-	)			    
-
-
-declare @receiptkey  varchar(15) = null,
+declare @receiptkey varchar(10) = null--,@transmitlogkey varchar (10) 
+declare --@receiptkey  varchar(15) = null,
 		@error int = 0
 
-select	*
-into	#tl
-from	WH2.transmitlog
-where	tablename = 'asnclosed'
+--set @receiptkey = '0000048296'--'0000048291'--'0000048289'--
+
+select	@receiptkey = key1 
+--into	#tl
+from	wh2.transmitlog
+where	transmitlogkey = @transmitlogkey
+	-- and tablename = 'asnclosed'
+	and isnull(KEY5,'') !='1'
+
+--select	@receiptkey = t.key1 
+--from	#tl t
+--	left join #tl tt
+--	    on t.transmitlogkey = tt.transmitlogkey
+--	    and tt.key5 = '1'
+--where	t.transmitlogkey = @transmitlogkey
+--	and tt.transmitlogkey is null
+
+print @receiptkey
+if @receiptkey is null return
+
+--
+/*
+ select * from wh2.podetail where pokey in (select pokey from wh2.po where otherreference = '0000045594')
+ select * from wh2.receiptdetail where receiptkey = '0000045594'
+-- delete from wh2.podetail where pokey in (select pokey from wh2.po where otherreference = '0000045594') and (ALTSKU != '' or altsku is null)
+*/
+declare @source varchar(100) --set --@source = 'proc_DA_CompositeASNClose'
+
+declare @send_error bit
+declare @msg_errdetails varchar(max)
+declare @receiptlinenumber varchar(5)
+declare @polinenumber varchar(5)
+declare @pokey varchar(10)
+declare @expokey varchar(20)
+declare @bs varchar(3) select @bs = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
+declare @bsanalit varchar(3) select @bsanalit = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
+declare @rqty float, @poqty float
+declare @potype varchar(10)
+
+declare @n bigint
 
 
-select	@receiptkey = t.key1 
-from	#tl t
-	left join #tl tt
-	    on t.transmitlogkey = tt.transmitlogkey
-	    and tt.key5 = '1'
-where	t.transmitlogkey = @transmitlogkey
-	and tt.transmitlogkey is null
-	
-	
-if @receiptkey is not NULL
-begin
-DECLARE	@return_value1 int
+CREATE TABLE [#receiptdetail](
+	id int identity (1,1) not null,
+	sku varchar(50) NULL,
+	storerkey varchar(15) NULL,	
+	skuqty float null,
+	qty float null,
+	qtyreceived float NULL,
+	QR_BRAK float NULL,
+	susr2 varchar(30) NULL, -- серия
+	lot varchar(20),
+	SCLAD varchar(50),
+	SortOrder int
+)
 
-EXEC	@return_value1 = [wh2].[proc_DA_ReceiptConfirm_attr]
- @receiptkey1 =@receiptkey
-    CREATE TABLE [#receiptdetail](
-	id int identity (1,1),	
-	sku varchar(50),	
-	storerkey varchar(15),
-	descr varchar(60),
-	packkey varchar(20),
-	uom varchar(20),
-	altsku varchar(30),
-	lottable01 varchar(50),
-	LOTTABLE02 varchar(50),
-	lottable04 datetime,
-	lottable05 datetime, 
-	lottable06 varchar(50),
-	sclad varchar(30),
-	qtyreceived float,
-	susr1 varchar(30)--,
-	--tolot varchar(20)
-    )
+CREATE TABLE [#podetail](
+	id int identity (1,1) not null,
+	--polinenumber varchar(15) NULL,
+	pokey varchar(20) null,
+	externpokey varchar(20) null,
+	sku varchar(50) NULL,
+	storerkey varchar(15) NULL,	
+	qty float NULL,
+	qtyordered float NULL, -- ожидаемое по ЗЗ
+	QTYADJUSTED float NULL, -- ожидаемое по строке 
+	QTYRECEIVED float NULL, -- принятое Н+Б
+	QR_BRAK float NULL, -- принятое Б
+	susr2 varchar(30) NULL, -- серия товара
+	lot varchar(20),
+	SCLAD varchar(50),
+	lot02 varchar(50),
+	lot04 datetime,
+	lot05 datetime
+)
 
-    CREATE TABLE [#podetail](
-	    id int identity (1,1),	
-	    pokey varchar(20),
-	    potype varchar(5),
-	    externpokey varchar(20),
-	    externlinenum varchar(5),
-	    sku varchar(50),
-	    storerkey varchar(15),	
-	    qtyordered float,
-	    lottable01 varchar(50),
-	    LOTTABLE02 varchar(50),
-	    lottable04 datetime,
-	    lottable05 datetime, 
-	    lottable06 varchar(50)
-    )
+create table #skuqty (
+	sku varchar(50) NULL,
+	storerkey varchar(15) NULL,	
+	qty float NULL
+)
 
-    CREATE TABLE [#pr](
-	    id int,	
-	    pokey varchar(20),
-	    potype varchar(5),
-	    externpokey varchar(20),
-	    externlinenum varchar(5),
-	    storerkey varchar(15),
-	    sku varchar(50),	
-	    qtyordered float,
-	    descr varchar(60),
-	    packkey varchar(20),
-	    uom varchar(20),
-	    altsku varchar(30),
-	    lottable01 varchar(50),
-	    LOTTABLE02 varchar(50),
-	    lottable04 datetime,
-	    lottable05 datetime, 
-	    lottable06 varchar(50),
-	    sclad varchar(30),
-	    qtyreceived float,
-	    susr1 varchar(30)--,
-	    --tolot varchar(20)
-    )
-
-    CREATE TABLE [#pr_it](
-	    id int,	
-	    pokey varchar(20),
-	    potype varchar(5),
-	    externpokey varchar(20),
-	    externlinenum varchar(5),
-	    storerkey varchar(15),
-	    sku varchar(50),	
-	    qtyordered float,
-	    descr varchar(60),
-	    packkey varchar(20),
-	    uom varchar(20),
-	    altsku varchar(30),
-	    lottable01 varchar(50),
-	    LOTTABLE02 varchar(50),
-	    lottable04 datetime,
-	    lottable05 datetime, 
-	    lottable06 varchar(50),
-	    sclad varchar(30),
-	    qtyreceived float,
-	    susr1 varchar(30)--,
-	    --tolot varchar(20)
-    )
+CREATE TABLE [#OutPOData](
+	[WHSEID] [varchar](3) NOT NULL,
+	[pokey] [varchar](10) NULL,
+	[EXTERNPOKEY] [varchar](20) NULL,
+	[POLINENUMBER] [varchar](5) NULL,
+	[EXTERNLINENO] [varchar](1) NOT NULL,
+	[qtyordered] [float] NULL,
+	[QTYRECEIVED] [float] NULL,
+	[sku] [varchar](50) NULL,
+	[SKUDESCRIPTION] [varchar](60) NULL,
+	[STORERKEY] [varchar](15) NULL,
+	[SUSR4] [varchar](50) NULL,
+	[susr2] [varchar](30) NULL,
+	[PACKKEY] [varchar](50) NOT NULL,
+	[UOM] [varchar](10) NULL,
+	[ALTSKU] [varchar](50) NULL,
+	[Lottable02] [varchar](50) NULL,
+	[Lottable04] [datetime] NULL,
+	[Lottable05] [datetime] NULL
+) ON [PRIMARY]
 
 
-    create table #pokey (
-	    pokey varchar(15),
-	    potype varchar(10)
-    )
+--create table #pokey (
+--	pokey varchar(15) NULL
+--)
 
-	
-	
-    insert into #receiptdetail
-    --(sku, storerkey, descr, packkey, uom, altsku, lottable01, LOTTABLE02, lottable04, lottable05, lottable06, sclad, qtyreceived, susr1, tolot)
 
-    select  r.SKU,r.storerkey,left(s.DESCR,60) as descr,s.PACKKEY,s.RFDEFAULTUOM,r.ALTSKU, 
-	    min(r.LOTTABLE01) as LOTTABLE01,							-- zaa 17/04/15 added to MIN
-	    r.LOTTABLE02, r.LOTTABLE04, r.LOTTABLE05, r.LOTTABLE06,
-	    case	when s.FREIGHTCLASS = '6' and r.TOLOC NOT IN ('BRAKPRIEM','LOSTPRIEM','OVERPRIEM','PRETENZ') then 'SD'
-			    when r.TOLOC = 'BRAKPRIEM' then 'BRAKPRIEM'
-			    when r.TOLOC = 'OVERPRIEM' then 'OVERPRIEM'
-			    when r.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
-			    when r.TOLOC = 'PRETENZ' then 'PRETENZ'
+select * into #podetailresult from #podetail
+
+
+print '0. проверка повторного закрытия ПУО'
+	select @receiptkey = tl.key1 from wh2.transmitlog tl where tl.transmitlogkey = @transmitlogkey
+	if 0 < (select count(*) from wh2.receipt r where r.receiptkey=@receiptkey and r.susr5='9')
+	begin
+		--raiserror ('Повторное закрытие ПУО = %s',16,1, @receiptkey)
+		set @send_error = 1
+		set @msg_errdetails = 'Повторное закрытие ПУО '+ @receiptkey
+		goto endproc
+	end	
+
+-- выборка приходов
+insert into #receiptdetail 
+select a.*,
+	/* формируем порядок распределения товара со складов */
+	case SCLAD when 'SD' then 1--
+		when 'BRAKPRIEM' then 2--'BRAKPRIEM'
+		when 'OVERPRIEM' then 3--'OVERPRIEM'
+		when 'LOSTPRIEM' then 4--'LOSTPRIEM'
+		--when 'PRETENZ' then 5--'OVERPRIEM'
+		when 'OX_PRIEM' then 6--'OX_PRIEM'  -- Шевелев, 26.08.2016, приблуда к ОХ
+		when 'VIRT' then 7--'VIRT' -- Шевелев, 02.12.2016 - ВиртПриходМСК
+		else 0--'GENERAL'
+	    end as SortOrder	
+FROM
+(select
+	rd.SKU, 
+	rd.storerkey,
+	0 skuqty,
+	sum(rd.QTYRECEIVED) qty,
+	sum(rd.QTYRECEIVED) qtyreceived,--sum(case when rd.toloc in ('PRIEM','PRIEM_EA','PRIEM_PL','QC') then rd.QTYRECEIVED else 0 end) qtyreceived, 
+	0 QR_BRAK,--sum(case when rd.toloc like 'BRAKPRIEM' then rd.qtyreceived else 0 end) QR_BRAK, 
+	rd.LOTTABLE02,rd.TOLOT,
+	 case	when s.FREIGHTCLASS = '6' and rd.TOLOC NOT IN ('BRAKPRIEM','LOSTPRIEM','OVERPRIEM','PRETENZ') then 'SD'
+			    when rd.TOLOC = 'BRAKPRIEM' then 'BRAKPRIEM'
+			    when rd.TOLOC = 'OVERPRIEM' then 'OVERPRIEM'
+			    when rd.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
+			    when rd.TOLOC = 'PRETENZ' then 'OVERPRIEM'
+			    when rd.TOLOC = 'OX_PRIEM' then 'OX_PRIEM'  -- Шевелев, 26.08.2016, приблуда к ОХ
+			    when rd.TOLOC = 'VIRT' then 'VIRT' -- Шевелев, 02.12.2016 - ВиртПриходМСК
 			    else 'GENERAL'
-	    end as SCLAD,
-	    sum(r.QTYRECEIVED) as sumqtyreceived,
-	    r.SUSR1--,
-	    --r.TOLOT
-    --into	#q		
-    from    WH2.RECEIPTDETAIL r
-	    join WH2.sku s
-		on s.SKU = r.SKU
-		and s.STORERKEY = r.STORERKEY
-    where   r.RECEIPTKEY = @receiptkey
-	    and r.QTYRECEIVED <> 0
-    group by r.storerkey,r.SKU, left(s.DESCR,60),s.PACKKEY,s.RFDEFAULTUOM, r.ALTSKU, --r.LOTTABLE01, 
-	    r.LOTTABLE02, r.LOTTABLE04, r.LOTTABLE05, r.LOTTABLE06,
-	    case	when s.FREIGHTCLASS = '6' and r.TOLOC NOT IN ('BRAKPRIEM','LOSTPRIEM','OVERPRIEM','PRETENZ') then 'SD'
-			    when r.TOLOC = 'BRAKPRIEM' then 'BRAKPRIEM'
-			    when r.TOLOC = 'OVERPRIEM' then 'OVERPRIEM'
-			    when r.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
-			    when r.TOLOC = 'PRETENZ' then 'PRETENZ'
+	    end as SCLAD  
+from wh2.RECEIPTDETAIL rd
+	join wh2.sku s on rd.SKU=s.sku
+where rd.RECEIPTKEY = @receiptkey and rd.qtyexpected = 0 and rd.QTYRECEIVED != 0
+group by rd.SKU, rd.STORERKEY, rd.TOLOT, rd.LOTTABLE02,
+		case	when s.FREIGHTCLASS = '6' and rd.TOLOC NOT IN ('BRAKPRIEM','LOSTPRIEM','OVERPRIEM','PRETENZ') then 'SD'
+			    when rd.TOLOC = 'BRAKPRIEM' then 'BRAKPRIEM'
+			    when rd.TOLOC = 'OVERPRIEM' then 'OVERPRIEM'
+			    when rd.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
+			    when rd.TOLOC = 'PRETENZ' then 'OVERPRIEM'
+			    when rd.TOLOC = 'OX_PRIEM' then 'OX_PRIEM'  -- Шевелев, 26.08.2016, приблуда к ОХ
+			    when rd.TOLOC = 'VIRT' then 'VIRT' -- Шевелев, 02.12.2016 - ВиртПриходМСК
 			    else 'GENERAL'
-	    end,
-	    r.SUSR1--,
-	    --r.TOLOT
-    order by r.SKU	
-    		
-    		
-    insert into #podetail
-    --(pokey,potype,externpokey,EXTERNLINENO,sku,storerkey,qtyordered,lottable01,LOTTABLE02,lottable04,lottable05, lottable06)		
+	    end--, lottable04, lottable05, lottable02
+)A
+order by SKU, sortorder
 
-    select  p.POKEY, p.POTYPE,p.EXTERNPOKEY,pd.EXTERNLINENO,
-	    pd.SKU,pd.STORERKEY,
-	    sum(pd.QTYORDERED) as QTYORDERED,
-	    pd.lottable01,pd.LOTTABLE02,pd.lottable04,pd.lottable05,pd.lottable06
-    from    WH2.PO p
-	    join WH2.PODETAIL pd
-		    on pd.POKEY = p.POKEY
-    where   p.OTHERREFERENCE =@receiptkey
-    group by p.POKEY, p.POTYPE,p.EXTERNPOKEY,pd.EXTERNLINENO,
-	    pd.SKU,pd.STORERKEY,
-	    pd.lottable01,pd.LOTTABLE02,pd.lottable04,pd.lottable05,pd.lottable06
-    order by p.POKEY,pd.SKU					
+--select '#receiptdetail',* from  #receiptdetail ----****
+
+--выборка ожиданий
+insert into #podetail
+select 
+	pd.pokey, 
+	pd.EXTERNPOKEY,
+	pd.SKU, 
+	pd.STORERKEY,
+	sum(pd.QTYORDERED) qty, 
+	sum(pd.QTYORDERED) QTYORDERED, 
+	0 QTYADJUSTED, 
+	0 QTYRECEIVED, 
+	0 QR_BRAK,
+	'',
+	'','',LOTTABLE02, LOTTABLE04, LOTTABLE05	
+	from wh2.PODETAIL pd 
+		join wh2.PO p on p.POKEY = pd.POKEY 
+	where p.OTHERREFERENCE = @receiptkey and pd.QTYORDERED>0
+	group by pd.SKU, pd.STORERKEY, pd.pokey, pd.EXTERNPOKEY, pd.storerkey,LOTTABLE02, LOTTABLE04, LOTTABLE05
+	order by pd.POKEY
+
+--select '#podetail',* from #podetail ----****
+
+-- общее количество товара
+insert into #skuqty (sku, storerkey, qty)
+select sku, storerkey, SUM(rd.qty) qty from #receiptdetail rd group by rd.sku, rd.storerkey
 
 
-    declare @i int = 1,
-	    @poid int = 0,
-	    @receiptid int = 0,
-	    @polinenumber int,
-	    @receiptlinenumber int,
-	    @pokey varchar(20),
-	    @text nvarchar(4000) = ''
-    declare @key nvarchar(18), @sku nvarchar(50), @qtyreceived decimal(22,0), @qtyordered decimal(22,0)
-    declare @key1 nvarchar(18), @qtyreceived1 decimal(22,0), @qtyordered1 decimal(22,0)
-    declare @delta decimal(22,0), @adj decimal(22,0),@sclad nvarchar(20),@sclad1 nvarchar(20)		
+-- select '#skuqty',* from #skuqty
 
-    if exists (select 1 from #receiptdetail where LOTTABLE06 <> 'NA' and SCLAD not in ('OVERPRIEM','PRETENZ'))
-    begin	
-    	
-	    --while (@i <= (select COUNT(*) from #receiptdetail where LOTTABLE06 <> 'NA' and SCLAD not in ('OVERPRIEM','PRETENZ')))
-	    --begin			
-    		
-		    --select	top 1 
-			   -- @receiptid = id 
-		    --from	#receiptdetail  
-		    --where	LOTTABLE06 <> 'NA' 
-			   -- and SCLAD not in ('OVERPRIEM','PRETENZ')
-    				
-    			
-		    insert into #pr		
-		    select  q.id,pd.POKEY, pd.POTYPE,pd.EXTERNPOKEY,pd.externlinenum,pd.STORERKEY,pd.SKU,pd.qtyordered,
-			    q.descr,q.PACKKEY,q.UOM,q.ALTSKU, q.LOTTABLE01, q.LOTTABLE02, q.LOTTABLE04, q.LOTTABLE05, q.LOTTABLE06,
-			    q.sclad,q.qtyreceived,q.susr1--,q.tolot
-		    from    #receiptdetail q
-			    join #podetail pd
-				on q.SKU = pd.SKU
-				and q.STORERKEY = pd.STORERKEY
-				and q.LOTTABLE02 = pd.LOTTABLE02
-				and q.LOTTABLE06 like  pd.LOTTABLE06+ '%'
-				and pd.POTYPE <> '0'
-		    where   --q.id = @receiptid
-			    --and 
-			    q.LOTTABLE06 <> 'NA' 
-			    and q.SCLAD not in ('OVERPRIEM','PRETENZ')
-    		
-		    insert into #pr
-		    select  q.id,pd.POKEY, pd.POTYPE,pd.EXTERNPOKEY,pd.externlinenum,q.STORERKEY,q.SKU,pd.qtyordered,
-			    q.descr,q.PACKKEY,q.UOM,q.ALTSKU, q.LOTTABLE01, q.LOTTABLE02, q.LOTTABLE04, q.LOTTABLE05, q.LOTTABLE06,
-			    q.sclad,q.qtyreceived,q.susr1--,q.tolot
-		    from    #receiptdetail q
-			    join #podetail pd
-				on --q.SKU = pd.SKU
-				pd.sku = case when q.susr1 = 'ORIGINAL' then q.sku when q.susr1 not IN ('ORIGINAL','NA') then q.susr1 else null end
-				and q.STORERKEY = pd.STORERKEY						
-				--and q.LOTTABLE06 = pd.LOTTABLE06
-				and q.LOTTABLE06 like pd.LOTTABLE06+'%'
-				and pd.POTYPE = '0'
-		   where   q.LOTTABLE06 <> 'NA' 
-			    and q.SCLAD not in ('OVERPRIEM','PRETENZ')		    
-			    --q.id = @receiptid			
-    		
-    		
-		    declare cur cursor local static for
-		    select  pokey, sku,sclad,qtyreceived, qtyordered
-		    from    #pr
-		    where   qtyreceived > qtyordered
-		    order by pokey, sku
 
-		    open cur
+declare @sku varchar (20), 
+		@storerkey varchar (20), 
+		@rdid int, 
+		@poid int,
+		@poqtyordered float,	-- Заказанное кол-во
+		@rdqtyreceived float,	-- Принято
+		@rdQR_BRAK float,		-- Принято: Брак
+		@rdSCLAD varchar(50),			-- СКЛАД
+		@skuqty float,
+		--@pokey varchar(20),
+		@extpokey varchar(30),
+		@originalQty float
 
-		    fetch next from cur into @key, @sku,@sclad, @qtyreceived, @qtyordered
-		    while @@FETCH_STATUS=0
-		    BEGIN
-			    set @delta = @qtyreceived - @qtyordered
-    			
-			    declare cur1 cursor local static for
-			    select  pokey, sclad,qtyreceived, qtyordered
-			    from    #pr
-			    where   qtyreceived < qtyordered and sku = @sku and sclad = @sclad
-			    order by pokey,sclad
+declare @notfinished int
+declare @currPO varchar(10), @lastPO varchar(10)
+-- если есть строки с принятым кол-вом начинаем цикл
+set @notfinished =  case when exists(select * from #receiptdetail where qtyreceived > 0) then 1 else 0 end;
+-- выбираем макс.PO в которое будут падать все излишки
+select @lastPO = max(id) from  #podetail
 
-			    open cur1
+while (@notfinished = 1)
+begin 
+	--выбор первой строки из принятого количства
+	if exists (select top 1 1  from #receiptdetail where qtyreceived > 0)
+	    select top 1 @rdid = max(id), @sku = max(sku), @storerkey = max(storerkey), @rdqtyreceived = sum(qtyreceived), 
+				--@rdQR_BRAK	= QR_BRAK,
+				@rdSCLAD	= max(SCLAD)
+			from #receiptdetail where qtyreceived > 0 group by id order by id
+	else
+	    select @sku = null, @rdqtyreceived = 0, @rdSCLAD = ''
+	
+	-- если есть строки с не нулевым ожидаемым - выбираем первую
+	if not @sku is null
+	begin
+	    print 'sku from Receipt: ' + @sku
+	    select top 1 @currPO = ID from #podetail where sku = @sku and storerkey = @storerkey and qty > 0
+	    print 'CurrentPO = ' + isnull(@currPO,'NULL')
+	end
+	else
+	begin
+	    select top 1 @currPO = ID, @sku = sku,@storerkey = storerkey  from #podetail where qty > 0
+	    print  'sku from PO: ' + @sku
+	end
+	-- если такой строки нет - то берем последнее использованное PO
+	if @currPO is null 
+		set @currPO = @lastPO
+	
+	print 'есть строки с ненулевым ожидаемым количеством'
+	--выбор первой строки по товару в зз
+	declare @POsku varchar(30)
+	--select '#podetail',* from #podetail
+	select @poid = ID, @poKey = pokey,@extpokey = externpokey, @poqtyordered = qty, @POsku = sku , @originalQty = qtyordered
+	
+	from #podetail where ID = @currPO -- sku = @sku and storerkey = @storerkey and qty != 0
+--				print 'storerkey '+@storerkey+', sku '+@sku+', qtyordered '+cast(@poqtyordered as varchar(20))
 
-			    fetch next from cur1 into @key1,@sclad1,@qtyreceived1, @qtyordered1
-			    while @@FETCH_STATUS=0 and @delta > 0
-			    BEGIN
-				    set @adj = @qtyordered1 - @qtyreceived1
-    				
-				    if @adj >= @delta
-					    select @adj = @delta, @delta = 0
-				    else
-					    set @delta = @delta - @adj
-
-				    update #pr
-				    set qtyreceived = qtyreceived - @adj
-				    where sku = @sku and pokey = @key and qtyordered = @qtyordered and sclad = @sclad
-    				
-				    update #pr
-				    set qtyreceived = qtyreceived + @adj
-				    where sku = @sku and pokey = @key1 and qtyordered = @qtyordered1 and sclad = @sclad1
-
-				    fetch next from cur1 into @key1,@sclad1,@qtyreceived1, @qtyordered1
-			    END
-			    close cur1
-			    deallocate cur1
-    			
-			    fetch next from cur into @key, @sku,@sclad,@qtyreceived, @qtyordered
-		    END
-		    close cur
-		    deallocate cur
-    		
-    		
-		    insert into #pr_it
-		    select	*
-		    from	#pr			
-    		
-		    --select @i = @i + 1
-    		
-		    delete 
-		    from    #receiptdetail
-		    from    #receiptdetail r
-			    join #pr p
-				    on r.id = p.id
-		    --where	r.id = @receiptid
-    		
-		    delete from #pr
-    	
-	    --end	
-
-    end
-
-    if exists (select 1 from #receiptdetail --where (LOTTABLE06 = 'NA' or SCLAD in ('OVERPRIEM','PRETENZ'))
-	    )
-    begin				
-    				
-	   insert into #pr_it		
-	    select  r.id,'' as POKEY, '' as POTYPE,'' as EXTERNPOKEY,pd.externlinenum,r.STORERKEY,r.SKU,0 as qtyordered,
-		    r.descr,r.PACKKEY,r.UOM,r.ALTSKU, r.LOTTABLE01, r.LOTTABLE02, r.LOTTABLE04, r.LOTTABLE05, r.LOTTABLE06,
-		    r.sclad,r.qtyreceived,r.susr1
-	    from    #receiptdetail r
-		    join #podetail pd
-				on r.SKU = pd.SKU
-				and r.STORERKEY = pd.STORERKEY
-				--and r.LOTTABLE02 = pd.LOTTABLE02 --Шевелев, Излишки серия+партия не совпадают.
-				--and r.LOTTABLE06 = pd.LOTTABLE06
-				
-				and pd.POTYPE <> '0'
-				
-				
-	    insert into #pr_it		
-	    select  r.id,'' as POKEY, '' as POTYPE,'' as EXTERNPOKEY,pd.externlinenum,r.STORERKEY,r.SKU,0 as qtyordered,
-		    r.descr,r.PACKKEY,r.UOM,r.ALTSKU, r.LOTTABLE01, r.LOTTABLE02, r.LOTTABLE04, r.LOTTABLE05, r.LOTTABLE06,
-		    r.sclad,r.qtyreceived,r.susr1
-	    from    #receiptdetail r				
-		    join #podetail pd
-				on pd.sku =	case	when r.susr1 = 'ORIGINAL' then r.sku 
-							--when r.susr1 not IN ('ORIGINAL','NA') then r.susr1 
-							when r.susr1 not IN ('ORIGINAL') then r.susr1  --- убрал на.
-							else null 
-						end
-				and r.STORERKEY = pd.STORERKEY						
-				--and r.LOTTABLE06 = pd.LOTTABLE06
-				and r.LOTTABLE06 like pd.LOTTABLE06+'%'
-				and pd.POTYPE = '0' 
-				
-				/* Шевелев, если строчка вообще не ожидалась 04.03.2015 */
-				
-	    insert into #pr_it		
-	    select  r.id,'' as POKEY, '' as POTYPE,'' as EXTERNPOKEY,r.id+100 as externlinenum,r.STORERKEY,r.SKU,0 as qtyordered,
-		    r.descr,r.PACKKEY,r.UOM,r.ALTSKU, r.LOTTABLE01, r.LOTTABLE02, r.LOTTABLE04, r.LOTTABLE05, r.LOTTABLE06,
-		    'OVERPRIEM' as sclad,r.qtyreceived,r.susr1
-	    from    #receiptdetail r				
-		    left join #podetail pd
-				on pd.sku =	case	when r.susr1 = 'ORIGINAL' then r.sku 
-							when r.susr1 not IN ('ORIGINAL','NA') then r.susr1 
-							--when r.susr1 not IN ('ORIGINAL') then r.susr1  --- убрал на.
-							else null 
-						end
-				and r.STORERKEY = pd.STORERKEY						
-				--and r.LOTTABLE06 = pd.LOTTABLE06
-				and r.LOTTABLE06 like pd.LOTTABLE06+'%'
-				and pd.POTYPE = '0' 
-		where r.susr1='NA'
-			/* Шевелев, если строчка вообще не ожидалась 04.03.2015 */	
-    	
-    	--------------Вставка 09.06.2015 --------------
-    	  if not exists (select 1 from #pr_it where pokey <> '')
-	    begin
+	if @sku != @POsku
+	begin
+	   set @poqtyordered = 0
+	end				
+	print	'[	Владелец '+@storerkey
+				+ ', ' + char(13) + '	Товар '+@sku
+				+ ', ' + char(13) + '	Заказано '+cast(@poqtyordered as varchar(20))
+				+ ', ' + char(13) + '	Принято '+cast(@rdqtyreceived as varchar(20))
+				--+ ', ' + char(13) + '	qtyreceivedbrack ' + cast( @rdQR_BRAK as varchar(20)) 
+				+ ', ' + char(13) + '	@rdSCLAD ' + cast( @rdSCLAD as varchar(20))
+				+ char(13) 
+				+ ']'
+	-- повторяем пока есть принятое И ожидаемое
+	declare @raspred decimal(22,5)
+	
+	if (isnull(@rdqtyreceived,0) > 0 AND isnull(@poqtyordered,0) > 0)
+	BEGIN
+		-- 1. принятое <= ожидаемое
+		declare @susr2 varchar(10)
 		
-		update  #pr_it
-		set	pokey = pp.pokey,
-			potype = pp.potype,
-			externpokey = pp.externpokey
-		from    #pr_it p
-			join (
-	    			select distinct w.pokey,w.potype,w.externpokey
-	    			from    #podetail w
-	    				join (
-	    				    select MAX(pokey) as pokey from #podetail where pokey <> ''
-	    				    )ww
-	    				    on ww.pokey = w.pokey
-			) pp
-				on p.pokey = '' 	    
-	    
-	    end	
-    	--------------Вставка 09.06.2015 --------------
-    	
-	    delete 
-	    from    #receiptdetail
-	    from    #receiptdetail r
-		    join #pr_it p
-			on r.id = p.id
-			--and (p.LOTTABLE06 = 'NA' or p.SCLAD in ('OVERPRIEM','PRETENZ'))
-
-    end
-
-    update  #pr_it
-    set	pokey = pp.pokey,
-	potype = pp.potype,
-	externpokey = pp.externpokey
-    from    #pr_it p
-	    join (
-	    	    select distinct w.pokey,w.potype,w.externpokey
-	    	    from    #pr_it w
-	    		    join (
-	    			select MAX(pokey) as pokey from #pr_it where pokey <> ''
-	    			)ww
-	    			on ww.pokey = w.pokey
-	    ) pp
-		    on p.pokey = ''
-
-    insert into #pokey
-    select distinct pokey,potype from #pr_it
-    
-    begin tran
-    print 'вставка результатов в ЗЗ1'
-    while exists (select 1 from #pr_it)
-    begin			
-    	    print 'ЧТО-ТО ЕСТЬ'
-    	    		
-	    select  top 1 
-		    @poid = id 
-	    from    #pr_it
-    	
-    	
-	    select  @polinenumber = MAX(cast(p.POLINENUMBER as int)) 
-	    from    WH2.PODETAIL p
-		    join (select pokey from #pr_it where id = @poid) pp
-			    on pp.pokey = p.pokey
-    				
-    				
-    				
-	    insert into WH2.PODETAIL 
-	    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-	    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    	
-    	
-	    select  'WH2',pokey,externpokey,
-		    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-		    --REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-		    externlinenum,
-		    qtyreceived,sku,descr,storerkey,sclad,packkey,uom,altsku,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,'asnclosed'
-	    from    #pr_it
-	    where   id = @poid
-	    
-	    if @@ERROR <> 0
-	    begin	    
-		print 'вставка результатов в ЗЗ не удалась'	
-		set @error = 1
-		goto endproc			
-	    
-	    end
-    	
-    	
-	    delete from #pr_it where id = @poid					
-    					
-    end
-    
-    	
-
-    if exists (select 1 from #pokey where potype = '0')
-    begin
-    	print 'анализ ЗЗ тип = 0'
-    	    
-    	    select  pd.POKEY,pd.EXTERNPOKEY,pd.EXTERNLINENO,pd.STORERKEY,pd.SKU, pd.QTYORDERED,
-		    --sum(pd.QTYRECEIVED) as QTYRECEIVED,
-		    pd.QTYRECEIVED,
-		    pd.lottable01, pd.LOTTABLE02, pd.lottable04, pd.lottable05, pd.lottable06,
-		    pd.SUSR4
-	    into    #ned
-	    from    WH2.PO p
-		    join WH2.PODETAIL pd
-			on pd.POKEY = p.POKEY
-		    join #pokey po
-			on po.pokey = p.POKEY
-			and po.potype = '0'
-		    join WH2.CODELKUP c 
-			on c.CODE = p.potype 
-			and C.LISTNAME = 'potype'
-			--and c.NOTES like '1%'
-			
-			
-	    select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.EXTERNLINENO,n.STORERKEY,n.SKU,n.QTYORDERED,nn.QTYRECEIVED,
-		    nn.lottable01, nn.LOTTABLE02, nn.lottable04, nn.lottable05, nn.lottable06
-	    into    #ned44
-	    from    (	select	pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-			from	#ned
-			where	QTYORDERED > 0
-			group by pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    join (  select  pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-				    --lottable01, LOTTABLE02, lottable04, lottable05, lottable06    --zaa 17/04/15 commented
-				    min(lottable01) as lottable01, min(lottable02) as lottable02,   --zaa 17/04/15 added
-				    min(lottable04) as lottable04, min(lottable05) as lottable05, 
-				    min(lottable06) as lottable06  
-			    from    #ned
-			    where   SUSR4 in ('SD','GENERAL','BRAKPRIEM')			    
-				    and QTYRECEIVED > 0
-			    group by pokey,EXTERNPOKEY,STORERKEY,SKU--,
-				    --lottable01, LOTTABLE02, lottable04, lottable05, lottable06    --zaa 17/04/15 commented
-			) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU			   
-			    and nn.lottable06 like n.lottable06	+'%'		 
-	    where   n.QTYORDERED > nn.QTYRECEIVED	    --позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)
-			
-    			
-	    select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.EXTERNLINENO,n.STORERKEY,n.SKU,n.QTYORDERED,nn.QTYRECEIVED,
-		    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06
-	    into    #ned55
-	    from    (	select	pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-			from	#ned
-			where	QTYORDERED > 0
-			group by pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    left join (	select	pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-				from	#ned
-				where	SUSR4 in ('SD','GENERAL','BRAKPRIEM')				    
-					and QTYRECEIVED > 0
-				group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-				    ) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU			    
-			    and nn.lottable06 like n.lottable06	+'%'		 
-	    where   nn.POKEY is null			--позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы) 
-	    
-	    
-	    while exists (select 1 from #ned44)
-	    begin
-    		--позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)   		
-    		    print 'анализ ЗЗ тип = 0,позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)'
-    		    update  WH2.RECEIPTDETAIL
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    		    
-    		    update  WH2.RECEIPT
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-		
-		    select  top 1 
-			    @poid = id 
-		    from    #ned44
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned44 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',n.pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    n.EXTERNLINENO,
-			    n.QTYORDERED - n.QTYRECEIVED as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'LOSTPRIEM' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,IsNull(r.ALTSKU,s.ALTSKU) as ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned44 n
-			    left join (
-			    	    select sku,storerkey,max(ALTSKU) as ALTSKU
-			    	    from WH2.RECEIPTDETAIL 
-			    	    where RECEIPTKEY = @receiptkey
-			    		   and IsNull(ALTSKU,'') <> '' 
-			    	    group by sku,storerkey
-				)r
-				on n.sku = r.SKU 
-			        and n.storerkey = r.storerkey			        	
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey		        
-		    where   n.id = @poid  		
-		    
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			
-			print 'анализ ЗЗ тип = 0,позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы) - не вставили в podetail'
-			set @error = 2
-			goto endproc			
-    	    
-		    end	   
-	    
-		delete from #ned44 where id = @poid
-		--delete from #t1					
-    	
-	    end
-    	
-	    while exists (select 1 from #ned55)
-	    begin
-    		--позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы)
-    		print 'анализ ЗЗ тип = 0,позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы)'
-    		    update  WH2.RECEIPTDETAIL
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    		    
-    		    update  WH2.RECEIPT
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    			    
-		    select  top 1 
-			    @poid = id 
-		    from    #ned55
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned55 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		   insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',n.pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    n.EXTERNLINENO,
-			    n.QTYORDERED as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'LOSTPRIEM' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,IsNull(r.ALTSKU,s.ALTSKU) as ALTSKU,
---			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-			n.lottable01, 'НедовложенияПост', '18781218 00:00', '18781218 00:00', n.lottable06,'asnclosed'
-		    from    #ned55 n
-			    left join (
-			    	    select  sku,storerkey,max(ALTSKU) as ALTSKU
-			    	    from    WH2.RECEIPTDETAIL 
-			    	    where   RECEIPTKEY = @receiptkey
-			    		    and IsNull(ALTSKU,'') <> '' 
-			    	    group by sku,storerkey
-				)r
-				on n.sku = r.SKU 
-			        and n.storerkey = r.storerkey
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey
-		    where   n.id = @poid
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			print 'анализ ЗЗ тип = 0,позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы) - не вставили в podetail'
-			set @error = 2
-			goto endproc			
-    	    
-		    end   		
-    		
-		    delete from #ned55 where id = @poid
-		    --delete from #t1						
-    	
-	    end
-    	
-    	
-	    /*select  pd.*
-	    into    #ned
-	    from    WH2.PO p
-		    join WH2.PODETAIL pd
-			on pd.POKEY = p.POKEY
-		    join #pokey po
-			on po.pokey = p.POKEY
-			and po.potype = '0'
-    	
-	    --выбираем из podetail строчки, которые вообще не приняты			
-	    select  IDENTITY(int,1,1) as id,
-		    n.*
-	    into    #ned2
-	    from    #ned n
-		    left join #ned nn
-			on nn.POKEY = n.POKEY
-			and nn.STORERKEY = n.STORERKEY
-			and nn.SKU = n.SKU
-			and nn.lottable02 = n.lottable02
-			and nn.lottable06 = n.lottable06
-			and nn.SUSR4 in ('SD','GENERAL','BRAKPRIEM')			
-			and nn.QTYRECEIVED > 0
-	    where   nn.POKEY is null
-		    and n.QTYORDERED > 0
-    	
-	    while exists (select 1 from #ned2)
-	    begin
-    		
-		    select  top 1 
-			    @poid = id 
-		    from    #ned2
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned2 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-			    0 as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'GENERAL' as sclad,s.packkey,s.RFDEFAULTUOM,s.ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned2 n
-			    join WH2.sku s 
-				on n.sku = s.SKU 
-				and n.storerkey = s.storerkey
-		    where   id = @poid
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			    print 'анализ ЗЗ тип = 0,ошибка'
-			    set @error = 1
-			    goto endproc			
-    	    
-		    end
-    		
-    		
-		    delete from #ned2 where id = @poid					
-    	
-	    end*/
-
-    end
-    
-    if @error = 0
-    begin
-
-	    commit tran
-
-    end
-
-    if exists (select 1 from #pokey where potype <> '0')    
-    begin
-
-	    select  pd.POKEY,pd.EXTERNPOKEY,pd.EXTERNLINENO,pd.STORERKEY,pd.SKU, pd.QTYORDERED,
-		    --sum(pd.QTYRECEIVED) as QTYRECEIVED,
-		    pd.QTYRECEIVED,
-		    pd.lottable01, pd.LOTTABLE02, pd.lottable04, pd.lottable05, pd.lottable06,
-		    pd.SUSR4,
-		    case    when c.NOTES like '1' then 1
-			    else 0
-		    end as notes
-	    into    #ned3
-	    from    WH2.PO p
-		    join WH2.PODETAIL pd
-			on pd.POKEY = p.POKEY
-		    join #pokey po
-			on po.pokey = p.POKEY
-			and po.potype <> '0'
-		    join WH2.CODELKUP c 
-			on c.CODE = p.potype 
-			and C.LISTNAME = 'potype'
-			--and c.NOTES like '1'
-	    --where	pd.SUSR4 in ('SD','GENERAL','BRAKPRIEM')
-	    --group by pd.POKEY,pd.EXTERNPOKEY,pd.STORERKEY,pd.SKU, pd.QTYORDERED,
-	    --		 pd.lottable01, pd.LOTTABLE02, pd.lottable04, pd.lottable05, pd.lottable06
-    	
-    	
-	    select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.EXTERNLINENO,n.STORERKEY,n.SKU,n.QTYORDERED,nn.QTYRECEIVED,
-		    nn.lottable01, nn.LOTTABLE02, nn.lottable04, nn.lottable05, nn.lottable06
-	    into    #ned4
-	    from    (select pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-	             from   #ned3
-	             where  notes = 1
-	    		    and QTYORDERED > 0
-		    group by pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    join (select pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-			from #ned3
-			where SUSR4 in ('SD','GENERAL','BRAKPRIEM')
-			    and notes = 1
-			    and QTYRECEIVED > 0
-			group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-			) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU
-			    and nn.lottable02 = n.lottable02
-			    and nn.lottable06 like n.lottable06	+'%'		 
-	    where   n.QTYORDERED > nn.QTYRECEIVED	    --позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)
-		    --and nn.QTYRECEIVED > 0
-    			
-    			
-	    select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.EXTERNLINENO,n.STORERKEY,n.SKU,n.QTYORDERED,nn.QTYRECEIVED,
-		    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06
-	    into    #ned5
-	    from    (select pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-	             from   #ned3
-	             where  notes = 1
-			    and QTYORDERED > 0
-		    group by pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    left join (select pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-				    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-				from #ned3
-				where SUSR4 in ('SD','GENERAL','BRAKPRIEM')
-				    and notes = 1
-				    and QTYRECEIVED > 0
-				group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-				    ) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU
-			    and nn.lottable02 = n.lottable02
-			    and nn.lottable06 like n.lottable06	+'%'		 
-	    where   nn.POKEY is null			--позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы)
-    			
-    				
-	    /*select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.EXTERNLINENO,n.STORERKEY,n.SKU,n.QTYORDERED,nn.QTYRECEIVED,
-		    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06
-	    into    #ned6
-	    from	(select pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-	        	 from	#ned3
-	        	 where	notes = 0
-				and QTYORDERED > 0
-		    group by pokey,EXTERNPOKEY,EXTERNLINENO,STORERKEY,SKU,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    left join (select pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-				    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-				from #ned3
-				where SUSR4 in ('SD','GENERAL','BRAKPRIEM')
-				    and notes = 0
-				     and QTYRECEIVED > 0
-				group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-				    ) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU
-			    and nn.lottable02 = n.lottable02
-			    and nn.lottable06 = n.lottable06			 
-	    where   nn.POKEY is null				--позиция вообще не принята и тип ПУО не входит в codelkup.notes
-	    */
-	    
-	    /*select  IDENTITY(int,1,1) as id,
-		    n.POKEY,n.EXTERNPOKEY,n.STORERKEY,n.SKU,nn.QTYORDERED,n.QTYRECEIVED,
-		    nn.lottable01, nn.LOTTABLE02, nn.lottable04, nn.lottable05, nn.lottable06
-	    into    #ned7
-	    from    (
-	    		select pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYRECEIVED) as QTYRECEIVED,
-			    lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-			from #ned3
-			where SUSR4 in ('SD','GENERAL','BRAKPRIEM')
-			    and notes = 0
-			    and QTYRECEIVED > 0
-			group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-				lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-		    ) n
-		    left join (				
-				select pokey,EXTERNPOKEY,STORERKEY,SKU,sum(QTYORDERED) as qtyordered,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06 
-				 from   #ned3
-				 where  notes = 0
-					and QTYORDERED > 0
-				group by pokey,EXTERNPOKEY,STORERKEY,SKU,
-					lottable01, LOTTABLE02, lottable04, lottable05, lottable06
-				    ) nn
-			    on nn.POKEY = n.POKEY
-			    and nn.STORERKEY = n.STORERKEY
-			    and nn.SKU = n.SKU
-			    and nn.lottable02 = n.lottable02
-			    and nn.lottable06 = n.lottable06			 
-	    where   nn.POKEY is null				--позиция принята не с ожидаемыми атрибутами и тип ПУО не входит в codelkup.notes
-	    
-	    
-    	*/
-    	
-    	    declare @storerkey varchar(20),
-    		    --@sku varchar(50),
-    		    @qty varchar(30),
-    		    @toloc varchar(30),
-    		    @tolot varchar(30),
-    		    @toid varchar(30),
-    		    @packkey varchar(30),
-    		    @uom varchar(30),
-    		    @lot01 varchar(50),
-    		    @lot02 varchar(50),
-    		    @lot04 varchar(50),
-    		    @lot05 varchar(50),
-    		    @lot06 varchar(50)
-    		    
-	    create table #t1
-	    (mess varchar(max))
-    	
-	    while exists (select 1 from #ned4)
-	    begin
-    		--позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)   		
-    		    print 'анализ ЗЗ тип <> 0,позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы)'
-    		    update  WH2.RECEIPTDETAIL
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    		    
-    		    update  WH2.RECEIPT
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-		
-		    select  top 1 
-			    @poid = id 
-		    from    #ned4
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned4 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',n.pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    --REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-			    n.EXTERNLINENO,
-			    n.QTYORDERED - n.QTYRECEIVED as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'LOSTPRIEM' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,IsNull(r.ALTSKU,s.ALTSKU) as ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned4 n
-			    left join (
-			    	    select sku,storerkey,max(ALTSKU) as ALTSKU
-			    	    from WH2.RECEIPTDETAIL 
-			    	    where RECEIPTKEY = @receiptkey
-			    		   and IsNull(ALTSKU,'') <> '' 
-			    	    group by sku,storerkey
-				)r
-				on n.sku = r.SKU 
-			        and n.storerkey = r.storerkey			        	
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey		        
-		    where   n.id = @poid   		
-		    
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			
-			print 'анализ ЗЗ тип <> 0,позиция не полностью принята и тип ПУО входит в codelkup.notes(поставить на балансы) - не вставили в podetail'
-			set @error = 2
-			goto endproc			
-    	    
-		    end
-		    
-		    /*select  top 1			    
-			    @storerkey = n.storerkey,@sku = n.sku,@pokey = 'NOPO',			
-			    @qty = n.QTYORDERED - n.QTYRECEIVED,@toloc = 'LOSTPRIEM',
-			    @tolot = r.TOLOT,@toid = '1_'+cast(n.id as varchar(5))+'_'+@receiptkey,
-			    @packkey = s.packkey,@uom = s.RFDEFAULTUOM,
-			    @lot01 = n.lottable01, @lot02 = n.LOTTABLE02, 
-			    @lot04 = case   when n.lottable04 is null then ''
-					    when n.lottable04 is not null then convert(varchar(15),n.lottable04,103)
-					    else ''
-				    end,				    
-			    @lot05 = case   when n.lottable05 is null then ''
-					    when n.lottable05 is not null then convert(varchar(15),n.lottable05,103)
-					    else ''
-				    end, 
-			    @lot06 = n.lottable06
-		    from    #ned4 n
-			    join WH2.sku s 
-				on n.sku = s.SKU 
-				and n.storerkey = s.storerkey
-			    left join (select STORERKEY,SKU,TOLOT,TOID,LOTTABLE02,LOTTABLE06 
-				       from WH2.RECEIPTDETAIL 
-				       where RECEIPTKEY = @receiptkey and QTYRECEIVED > 0) r
-				    on r.STORERKEY = n.STORERKEY
-				    and r.SKU = n.SKU
-				    and r.LOTTABLE02 = n.LOTTABLE02
-				    and r.LOTTABLE06 = n.LOTTABLE06
-		    where   n.id = @poid
-		    
-		    select @text = 'java -classpath c:\DA_Axap\DKInforDA.jar -DconfigPath=c:\DA_Axap\DKInforDA.properties dke.da.trident.ExceedServerCall Receipt PRD2_WH2 asnclosed '+ @receiptkey+',001,'+@tolot+','+@receiptkey+','+@sku+','+@pokey+','+@qty+','+@uom+','+@packkey+','+@toloc+','+@toid+',,N,,'+@lot01+','+@lot02+',,'+@lot04+','+@lot05+','+@lot06+',,,,,,,,,,0,,0,,,,,,'
-		   
-		    print 'анализ ЗЗ тип <> 0,1 - поставить на балансы'
-		    insert into #t1 
-		    exec xp_cmdshell @text
-		    --exec xp_cmdshell 'java -classpath c:\dataadapter\DKInforDA.jar -DconfigPath=c:\dataadapter\DKInforDA.properties dke.da.trident.ExceedServerCall Receipt PRD2_WH2 asnclosed @receiptkey,@storerkey,@tolot,@receiptkey,@sku,,@qtyreceived,@uom,@packkey,@toloc,@toid,,N,,@lot01,@lot02,,@lot04,@lot05,@lot06,,,,,,,,,,0,,0,,,,,,'
-		    
-		    print 'анализ ЗЗ тип <> 0,1 - вставка dbo.da_CloseASN'
-		    
-		    insert into dbo.da_CloseASN
-		    (receiptkey,message)		     		    
-		    select  @receiptkey,'1/ '+ mess 
-		    from    #t1
-		    
-		    
-		    if not EXISTS (select 1 from #t1 where mess like 'Receipt Result: NO ERROR%')
-		    begin
-		    	print '1_Receipt Result:ERROR'    			
-			set @error = 2
-			goto endproc			
-    	    
-		    end*/
-		    
-		    /*select  @receiptlinenumber = MAX(cast(RECEIPTLINENUMBER as int))
-		    from    WH2.RECEIPTDETAIL
-		    where   RECEIPTKEY = @receiptkey
-    		
-    		
-		    insert into WH2.RECEIPTDETAIL
-		    (WHSEID,RECEIPTKEY,RECEIPTLINENUMBER,STORERKEY,SKU,QTYRECEIVED,status,TOLOC,TOLOT,TOID,PACKKEY,UOM,
-		    LOTTABLE01,LOTTABLE02,LOTTABLE04,LOTTABLE05,LOTTABLE06,ADDWHO)
-    		
-		    select  'WH2' as WHSEID,@receiptkey,
-			    REPLICATE('0',5 - LEN(@receiptlinenumber+1)) + CAST(@receiptlinenumber+1 as varchar(10)) as RECEIPTLINENUMBER,
-			    n.storerkey,n.sku,			
-			    n.QTYORDERED - n.QTYRECEIVED as qtyreceived,'11' as status,'LOSTPRIEM' as toloc,r.TOLOT,r.TOID,
-			    s.packkey,s.RFDEFAULTUOM,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned4 n
-			    join WH2.sku s 
-				on n.sku = s.SKU 
-				and n.storerkey = s.storerkey
-			    left join (select STORERKEY,SKU,TOLOT,TOID,LOTTABLE02,LOTTABLE06 
-				       from WH2.RECEIPTDETAIL 
-				       where RECEIPTKEY = @receiptkey and QTYRECEIVED > 0) r
-				    on r.STORERKEY = n.STORERKEY
-				    and r.SKU = n.SKU
-				    and r.LOTTABLE02 = n.LOTTABLE02
-				    and r.LOTTABLE06 = n.LOTTABLE06
-		    where   n.id = @poid
-    		
-    		if @@ERROR <> 0
-		begin	    
-			
-			set @error = 1
-			goto endproc			
-	    
-		end*/
-	    
-		delete from #ned4 where id = @poid
-		delete from #t1					
-    	
-	    end
-    	
-	    while exists (select 1 from #ned5)
-	    begin
-    		--позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы)
-    		print 'анализ ЗЗ тип <> 0,позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы)'
-    		    update  WH2.RECEIPTDETAIL
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    		    
-    		    update  WH2.RECEIPT
-    		    set	    STATUS = '9'
-    		    where   RECEIPTKEY = @receiptkey
-    			    and STATUS = '11'
-    			    
-		    select  top 1 
-			    @poid = id 
-		    from    #ned5
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned5 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',n.pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    --REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-			    n.EXTERNLINENO,
-			    n.QTYORDERED as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'LOSTPRIEM' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,IsNull(r.ALTSKU,s.ALTSKU) as ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned5 n
-			    left join (
-			    	    select sku,storerkey,max(ALTSKU) as ALTSKU
-			    	    from WH2.RECEIPTDETAIL 
-			    	    where RECEIPTKEY = @receiptkey
-			    		   and IsNull(ALTSKU,'') <> '' 
-			    	    group by sku,storerkey
-				)r
-				on n.sku = r.SKU 
-			        and n.storerkey = r.storerkey
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey
-		    where   n.id = @poid
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			print 'анализ ЗЗ тип <> 0,позиция вообще не принята и тип ПУО входит в codelkup.notes(поставить на балансы) - не вставили в podetail'
-			set @error = 2
-			goto endproc			
-    	    
-		    end
-		    
-		    /*select  top 1			    
-			    @storerkey = n.storerkey,@sku = n.sku,@pokey = 'NOPO',			
-			    @qty = n.QTYORDERED - n.QTYRECEIVED,@toloc = 'LOSTPRIEM',
-			    @tolot = r.TOLOT,@toid = '2_'+cast(n.id as varchar(5))+'_'+@receiptkey,
-			    @packkey = s.packkey,@uom = s.RFDEFAULTUOM,
-			    @lot01 = n.lottable01, @lot02 = n.LOTTABLE02, 
-			    @lot04 = case   when n.lottable04 is null then ''
-					    when n.lottable04 is not null then convert(varchar(15),n.lottable04,103)
-					    else ''
-				    end, 
-				    
-			    @lot05 = case   when n.lottable05 is null then ''
-					    when n.lottable05 is not null then convert(varchar(15),n.lottable05,103)
-					    else ''
-				    end, 
-			    @lot06 = n.lottable06
-		    from    #ned5 n
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey
-			    left join (select STORERKEY,SKU,TOLOT,TOID,LOTTABLE02,LOTTABLE06 
-				       from WH2.RECEIPTDETAIL 
-				       where RECEIPTKEY = @receiptkey and QTYRECEIVED > 0) r
-			        on r.STORERKEY = n.STORERKEY
-			        and r.SKU = n.SKU
-			        and r.LOTTABLE02 = n.LOTTABLE02
-			        and r.LOTTABLE06 = n.LOTTABLE06
-		    where   n.id = @poid
-		    
-		    select @text = 'java -classpath c:\DA_Axap\DKInforDA.jar -DconfigPath=c:\DA_Axap\DKInforDA.properties dke.da.trident.ExceedServerCall Receipt PRD2_WH2 asnclosed '+ @receiptkey+',001,'+@tolot+','+@receiptkey+','+@sku+','+@pokey+','+@qty+','+@uom+','+@packkey+','+@toloc+','+@toid+',,N,,'+@lot01+','+@lot02+',,'+@lot04+','+@lot05+','+@lot06+',,,,,,,,,,0,,0,,,,,,'
-	   
-		    print 'анализ ЗЗ тип <> 0,2 - поставить на балансы'
-		    insert into #t1 
-		    exec xp_cmdshell @text
-		    --exec xp_cmdshell 'java -classpath c:\dataadapter\DKInforDA.jar -DconfigPath=c:\dataadapter\DKInforDA.properties dke.da.trident.ExceedServerCall Receipt PRD2_WH2 asnclosed @receiptkey,@storerkey,@tolot,@receiptkey,@sku,,@qtyreceived,@uom,@packkey,@toloc,@toid,,N,,@lot01,@lot02,,@lot04,@lot05,@lot06,,,,,,,,,,0,,0,,,,,,'
-		    
-		    print 'анализ ЗЗ тип <> 0,2 - вставка dbo.da_CloseASN'
-		    insert into dbo.da_CloseASN
-		    (receiptkey,message)		     		    
-		    select  @receiptkey,'2/ '+ mess 
-		    from    #t1
-		    
-		    
-		    if not EXISTS (select 1 from #t1 where mess like 'Receipt Result: NO ERROR%')
-		    begin
-		    	print '2_Receipt Result:ERROR'     			
-			set @error = 2
-			goto endproc			
-    	    
-		    end*/
-    		
-		    /*select  @receiptlinenumber = MAX(cast(RECEIPTLINENUMBER as int))
-		    from    WH2.RECEIPTDETAIL
-		    where   RECEIPTKEY = @receiptkey
-    		
-    		
-		    insert into WH2.RECEIPTDETAIL
-		    (WHSEID,RECEIPTKEY,RECEIPTLINENUMBER,STORERKEY,SKU,QTYRECEIVED,status,TOLOC,TOLOT,TOID,PACKKEY,UOM,
-		    LOTTABLE01,LOTTABLE02,LOTTABLE04,LOTTABLE05,LOTTABLE06,ADDWHO)
-    		
-		    select  'WH2' as WHSEID,@receiptkey,
-			    REPLICATE('0',5 - LEN(@receiptlinenumber+1)) + CAST(@receiptlinenumber+1 as varchar(10)) as RECEIPTLINENUMBER,
-			    n.storerkey,n.sku,			
-			    n.QTYORDERED as qtyreceived,'11' as status,'LOSTPRIEM' as toloc,r.TOLOT,r.TOID,
-			    s.packkey,s.RFDEFAULTUOM,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned5 n
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey
-			    left join (select STORERKEY,SKU,TOLOT,TOID,LOTTABLE02,LOTTABLE06 
-				       from WH2.RECEIPTDETAIL 
-				       where RECEIPTKEY = @receiptkey and QTYRECEIVED > 0) r
-			        on r.STORERKEY = n.STORERKEY
-			        and r.SKU = n.SKU
-			        and r.LOTTABLE02 = n.LOTTABLE02
-			        and r.LOTTABLE06 = n.LOTTABLE06
-		    where   n.id = @poid
-		    
-		    if @@ERROR <> 0
-		    begin	    
-    			
-			    set @error = 1
-			    goto endproc			
-    	    
-		    end*/
-    		
-    		
-		    delete from #ned5 where id = @poid
-		    delete from #t1						
-    	
-	    end
-    	
-	    /*while exists (select 1 from #ned6)
-	    begin
-    		--позиция вообще не принята и тип ПУО не входит в codelkup.notes
-    		print 'анализ ЗЗ тип <> 0,позиция вообще не принята и тип ПУО не входит в codelkup.notes'
-		    select  top 1 
-			    @poid = id 
-		    from    #ned6
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned6 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,QTYRECEIVED,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  'WH2',pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-			    0 as qtyreceived,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'GENERAL' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,s.ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned6 n
-			    join WH2.sku s 
-				on n.sku = s.SKU 
-				and n.storerkey = s.storerkey
-		    where   n.id = @poid	
-    		
-    		if @@ERROR <> 0
+		if @rdqtyreceived <= @poqtyordered
 		begin
-		    print 'анализ ЗЗ тип <> 0,позиция вообще не принята и тип ПУО не входит в codelkup.notes - не вставили в podetail'	    
-		    set @error = 2
-		    goto endproc	    
+		    print '1. принятое <= ожидаемое'
+			-- распределить все принятое в текущую строку ЗЗ
+			set @raspred = @rdqtyreceived   -- поправил, чтобы недостачи не формиловались --Шевелев 14.04.2017
+			-- уменьшить ожидаемое на распределенное
+			--set @poqtyordered = 0--@poqtyordered - @rdqtyreceived
+			set @poqtyordered = @poqtyordered - @rdqtyreceived -- поправил, чтобы недостачи не формиловались --Шевелев 14.04.2017
+			-- обнулить принятое
+			set @rdqtyreceived = 0
+			set @susr2 = '1'
 		end
+		else -- 2. принятое > ожидаемое
+		begin
+		    print '2. принятое > ожидаемое'
+			-- распределить принятое в кол-ве ожидаемого
+			set @raspred = @poqtyordered
+			-- уменьшить принятое на распределенное
+			set @rdqtyreceived = @rdqtyreceived - @poqtyordered
+			-- обнулить ожидаемое
+			set @poqtyordered = 0
+			set @susr2 = '2'
+		end
+		-- добавляем строку результата
+		insert into #podetailresult (
+				sku, 	storerkey, 	 pokey, externpokey, qtyordered, QTYRECEIVED, lot, 	SCLAD,	susr2,	lot02,		lot04,			lot05)
+		select rd.sku, rd.storerkey, @pokey, @extpokey, @raspred, 	@raspred, 	 rd.lot, rd.SCLAD, @susr2, la.LOTTABLE02, la.LOTTABLE04, la.LOTTABLE05
+		from #receiptdetail rd, wh2.LOTATTRIBUTE la
+		where rd.id = @rdid	and la.LOT=rd.lot			
 		
-		delete from #ned6 where id = @poid					
-    	
-	    end
-	    */
-	    
-	   /* while exists (select 1 from #ned7)
-	    begin
-    		--позиция принята не с ожидаемыми атрибутами и тип ПУО не входит в codelkup.notes
-		    select  top 1 
-			    @poid = id 
-		    from    #ned7
-    	
-		    select  @polinenumber = MAX(cast(p.POLINENUMBER as int))
-		    from    WH2.PODETAIL p
-			    join (select pokey from #ned7 where id = @poid) pp
-				    on pp.pokey = p.pokey
-    	
-		    insert into WH2.PODETAIL 
-		    (pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,qtyordered,SKU,SKUDESCRIPTION,STORERKEY,SUSR4,PACKKEY,UOM,ALTSKU,
-		    lottable01, LOTTABLE02, lottable04, lottable05, lottable06,ADDWHO)
-    		
-		    select  pokey,externpokey,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as polinenumber,
-			    REPLICATE('0',5 - LEN(@polinenumber+1)) + CAST(@polinenumber+1 as varchar(10)) as EXTERNLINENO,
-			    n.QTYORDERED as QTYORDERED,n.sku,LEFT(s.DESCR,60) as descr,n.storerkey,'GENERAL' as sclad,s.packkey,
-			    s.RFDEFAULTUOM,s.ALTSKU,
-			    n.lottable01, n.LOTTABLE02, n.lottable04, n.lottable05, n.lottable06,'asnclosed'
-		    from    #ned7 n
-			    join WH2.sku s 
-			        on n.sku = s.SKU 
-			        and n.storerkey = s.storerkey
-		    where   n.id = @poid	
-    		
-    		if @@ERROR <> 0
-			begin	    
+		-- корректируем принятое в таблице
+		update #receiptdetail set	qtyreceived = @rdqtyreceived 	where id = @rdid
+		-- корректируем ожидаемое в таблице
+		update #podetail set qty = @poqtyordered where id = @poid
+		
+		
+		
+	end			
+	else 
+	--3. Ожидаемое отсутствует
+	IF (isnull(@rdqtyreceived,0) > 0 AND isnull(@poqtyordered,0) <= 0)
+	begin
+	    print '3. Ожидаемое отсутствует'
+		set @raspred = @rdqtyreceived
+		set @rdqtyreceived = 0
+		set @poqtyordered = 0
+		-- добавляем строку результата
+		insert into #podetailresult (
+				sku, 	storerkey, 	 pokey, externpokey, qtyordered, QTYRECEIVED, lot, 	SCLAD,	susr2,	lot02,		lot04,			lot05)
+		select rd.sku, rd.storerkey, @pokey, @extpokey, @poqtyordered, 	@raspred, 	 rd.lot, rd.SCLAD, '3', la.LOTTABLE02, la.LOTTABLE04, la.LOTTABLE05
+		from #receiptdetail rd, wh2.LOTATTRIBUTE la
+		where rd.id = @rdid	and la.LOT=rd.lot			
+		-- корректируем принятое в таблице
+		update #receiptdetail set	qtyreceived = @rdqtyreceived 	where id = @rdid
+	end
+	else
+	--4. принятое остутствует
+	IF (isnull(@rdqtyreceived,0) = 0 AND isnull(@poqtyordered,0) > 0)	
+	begin
+	    print '4. принятое остутствует'
+		set @raspred = 0
+		set @rdqtyreceived = 0
+		-- добавляем строку результата
+		
+		--select @poqtyordered as 'осталось' , @originalQty as 'заказанное'
+		
+		if (@poqtyordered = @originalQty)
+			begin
+				insert into #podetailresult (
+						sku, 	storerkey, 	 pokey, externpokey, qtyordered, QTYRECEIVED, lot, 	SCLAD,		susr2,	lot02,				lot04,			lot05)
+				select rd.sku, rd.storerkey, @pokey, @extpokey, @poqtyordered, 	@raspred, 	 '', 'LOSTPRIEM', '4', 'НедовложенияПост', '19000101 00:00', '19000101 00:00'
+				from #podetail rd --, wh2.LOTATTRIBUTE la
+				where rd.id = @poid--	and la.LOT=rd.lot
+			end		
+		-- корректируем ожидаемое в таблице
+		update #podetail set qty = 0 where id = @poid
+	end
+	else
+		raiserror ('Ошибка вариантов распределения',16,1)
+	
+	--set @lastPO = @currPO
+	if exists(select top 1 1 from #podetail where qty > 0)
+				or exists (select top 1 1 from #receiptdetail where qtyreceived > 0)
+		set @notfinished = 1
+	else
+		set @notfinished = 0
+end
+
+--select '#podetailresult',* from #podetailresult ----****
+
+--select '#podetail', * from #podetail
+--select '#podetailresul', * from #podetailresult where sku = '38183'
+--select * from #receiptdetail
+
+select * from #podetailresult
+
+-- --вставка результатов в ЗЗ
+declare @prevCount int
+set @prevCount = 0
+while (exists(select * from #podetailresult))
+	begin
+		select distinct top(1) @pokey = pokey from #podetailresult
+		
+		select @polinenumber = MAX(POLINENUMBER) from wh2.PODETAIL where POKEY = @pokey
+		
+		print 'po: '+@pokey + '  line: ' + @polinenumber
+  
+  
+		insert into wh2.PODETAIL (WHSEID,pokey,	EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,
+			QTYORDERED,-- ожидаемое по ЗЗ			--qtyadjusted, -- ожидаемое по строке
+			QTYRECEIVED, -- принятое Н+Б			--Qtyrejected, -- принятое Б
+			SKU,SKUDESCRIPTION,STORERKEY,SUSR4,SUSR2,
+			PACKKEY,UOM,ALTSKU,Lottable02,LOTTABLE04,LOTTABLE05 )
+		output inserted.WHSEID,inserted.pokey,inserted.EXTERNPOKEY,inserted.POLINENUMBER,inserted.EXTERNLINENO,
+			inserted.QTYORDERED,-- ожидаемое по ЗЗ	
+			inserted.QTYRECEIVED, -- принятое Н+Б
+			inserted.SKU,inserted.SKUDESCRIPTION,inserted.STORERKEY,inserted.SUSR4,inserted.SUSR2,
+			inserted.PACKKEY,inserted.UOM,inserted.ALTSKU,inserted.Lottable02,inserted.LOTTABLE04,inserted.LOTTABLE05 
+		into #OutPOData (WHSEID,pokey,EXTERNPOKEY,POLINENUMBER,EXTERNLINENO,
+			QTYORDERED,-- ожидаемое по ЗЗ	
+			QTYRECEIVED, -- принятое Н+Б
+			SKU,SKUDESCRIPTION,STORERKEY,SUSR4,SUSR2,
+			PACKKEY,UOM,ALTSKU,Lottable02,LOTTABLE04,LOTTABLE05)
+		
+--select @prevCount,@polinenumber
+		select 
+			--'D' S,
+			'wh2' WHSEID,	@pokey pokey,	EXTERNPOKEY,
+			right('0000'+cast((row_number()over (partition by pdr.pokey order by pdr.id) /*-@prevCount*/+@polinenumber) as varchar(20)),5) POLINENUMBER,
+			'' EXTERNLINENO,
+			0, -- qtyordered, --Шевелев 14.04.2017 - убираем вставку qtyOrdered в podetail
+			pdr.QTYRECEIVED, --принятое включая брак
+			pdr.sku,
+			left(s.DESCR,60) SKUDESCRIPTION, -- в wh2.PoDetail - skudescription 60 символов, если будет больше, будет ошибка и файл в аналит не уйдет.
+			pdr.STORERKEY,pdr.SCLAD SUSR4,pdr.susr2,s.PACKKEY,s.RFDEFAULTUOM UOM,
+			IsNull(r.ALTSKU,s.ALTSKU) as ALTSKU,
+			--l.LOTTABLE01,
+			pdr.lot02 Lottable02,pdr.LOt04 Lottable04,pdr.LOT05 Lottable05
+--into dbo.POdetTest
+			from #podetailresult pdr 
+				join wh2.sku s on pdr.sku = s.SKU and pdr.storerkey = s.storerkey
+				--left join #receiptdetail rd on rd.sku = pdr.sku and rd.storerkey = pdr.storerkey and pdr.lot =  rd.lot --pdr.LOTTABLE02 = rd.LOTTABLE02
+				left join wh2.lotattribute l on pdr.lot = l.lot
 				
-				set @error = 1
-				goto endproc			
-		    
-			end
-    		
-		    delete from #ned7 where id = @poid					
-    	
-	    end*/
-    	
-    	
+				left join (
+			    	    select sku,storerkey,max(ALTSKU) as ALTSKU
+			    	    from wh2.RECEIPTDETAIL 
+			    	    where RECEIPTKEY = @receiptkey
+			    		   and IsNull(ALTSKU,'') <> '' 
+			    	    group by sku,storerkey
+				)r
+					on	pdr.sku = r.SKU and pdr.storerkey = r.storerkey
+				
+			where pdr.pokey = @pokey
+			order by pdr.sku
+			--and pdr.sku = '38183'
+		set @prevCount = @@rowcount
+		delete from #podetailresult where @pokey = pokey
+	end
+	
+	alter table #outPOData add  SELLERNAME varchar(45), BUYERADDRESS4 varchar(45)
+	
+	update t1 set SELLERNAME =  p.SELLERNAME, BUYERADDRESS4=p.BUYERADDRESS4,SUSR2 = p.SUSR2
+	from #outPOData t1 
+	join wh2.PO p on t1.pokey = p.pokey
+	
+	
+select --'#OutPOData',
+			IDENTITY(int,1,1) idpodet,
+			WHSEID,pokey,EXTERNPOKEY,sellername,BUYERADDRESS4,--POLINENUMBER,EXTERNLINENO,
+			sum(QTYORDERED)qtyordered,-- ожидаемое по ЗЗ	
+			sum(QTYRECEIVED)qtyreceived, -- принятое Н+Б
+			SKU,SKUDESCRIPTION,STORERKEY,
+			SUSR4,--SUSR2,	PACKKEY,UOM,
+			ALTSKU,Lottable02,LOTTABLE04,LOTTABLE05
+ into #result
+ from #OutPOData
+ group by  WHSEID,pokey,EXTERNPOKEY,sellername,BUYERADDRESS4,--POLINENUMBER,EXTERNLINENO,
+			SKU,SKUDESCRIPTION,STORERKEY,SUSR4,--SUSR2,PACKKEY,UOM,
+			ALTSKU,Lottable02,LOTTABLE04,LOTTABLE05
 
-    end
-    				
-    print 'Закрываем ЗЗ и ПУО'
-    update  p
-    set	    status = '11'
-    from    WH2.PODETAIL p
-	    join #pokey pp
-		on pp.pokey = p.POKEY	    
-    	    
-    update  p
-    set	    status = '11', EDITDATE=GETDATE()
-    from    WH2.PO p
-	    join #pokey pp
-		on pp.pokey = p.POKEY
-		and p.POTYPE = pp.potype		
+--print 'выбираем номера ЗЗ для пуо'
+	--insert into #pokey select pokey from wh2.PO where OTHERREFERENCE = @receiptkey order by POKEY
+	select identity(int,1,1) idpo, pokey into #pokey from wh2.PO where OTHERREFERENCE = @receiptkey order by POKEY
 		
-    update  WH2.RECEIPTDETAIL
-    set	    STATUS = '11'
-    where   RECEIPTKEY = @receiptkey
-	    and STATUS = '9'
-    
-    update  WH2.RECEIPT
-    set	    STATUS = '11'
-    where   RECEIPTKEY = @receiptkey
-	    and STATUS = '9'		
-    	    
-    	    
-    select  p.EXTERNPOKEY, p.POTYPE, p.SELLERNAME, p.BUYERADDRESS4, p.SUSR2,
-	    p2.SKU,p2.STORERKEY,p2.EXTERNLINENO, p2.QTYORDERED, p2.QTYRECEIVED,
-	    p2.ALTSKU,
-	    --p2.SUSR4,
-	    case    when  p2.SUSR4 = 'GENERAL' then 'MSK_СкладПродаж'
-		    when  p2.SUSR4 = 'BRAKPRIEM' then 'MSK_ПТВПостащика'
-		    when  p2.SUSR4 = 'PRETENZ' then 'MSK_ПеревложенияПост'
-		    when  p2.SUSR4 = 'LOSTPRIEM' then 'MSK_НедовложенияПост'
-		    when  p2.SUSR4 = 'OVERPRIEM' then 'MSK_ПеревложенияПост'
-		    when  p2.SUSR4 = 'SD' then 'MSK_СД'
-	    end as SUSR4,
-	    p2.LOTTABLE01, p2.LOTTABLE02, p2.LOTTABLE04, p2.LOTTABLE05,
-	    p2.LOTTABLE06,p2.ADDWHO
-    into    #itog	
-    from    WH2.PO p
-	    join WH2.PODETAIL p2
-		on p2.POKEY = p.POKEY
-    where   p.OTHERREFERENCE = @receiptkey
+		select @potype=POTYPE from wh2.PO where POKEY=@pokey
+		
+		if @potype not in ('4','5') 
+			begin		
+
+				print 'Пытаемся вставить в обменные таблы DAX'	    
+				
 
 
-    select  identity(int,1,1) as id,
-	    EXTERNPOKEY,POTYPE, SELLERNAME, BUYERADDRESS4, SUSR2
-    into    #ii		
-    from    (select distinct EXTERNPOKEY,POTYPE, SELLERNAME, BUYERADDRESS4, SUSR2 from #itog)i
+				select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+				from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].INFORINTEGRATIONTABLE_RECEIVED
+				
+				insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].INFORINTEGRATIONTABLE_RECEIVED
+				(DataAReaID, DocID, DocType,INFORDAXSYSTEM, CUSTVENDAC, inventLocationID, Status,daxstatus,ReceivedDate,RecID)
+				
+				select  'SZ' DataAReaID,EXTERNPOKEY,POTYPE, '1' INFORDAXSYSTEM ,SELLERNAME,SUSR2,  '27' Status,'5' daxstatus, GETDATE() ReceivedDate,
+   					@n + tp.idpo as recid
+				from    #pokey tp
+				join wh2.PO p on tp.POKEY = p.POKEY
+				    
+				    
+				if @@ERROR <> 0
+				begin	    
+    					print 'Пытаемся вставить в обменные таблы DAX - голова Ошибка'
+					--set @error = 1
+					goto endproc			
+
+				end
+
+					select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+					from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].INFORINTEGRATIONLINE_RECEIVED
 
 
-    select  identity(int,1,1) as id,
-	    EXTERNPOKEY,SKU,STORERKEY,EXTERNLINENO,QTYORDERED,QTYRECEIVED,
-	    ALTSKU,
-	    SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-	    LOTTABLE06
-    into    #i		
-    from    (
-    	
-    		select  EXTERNPOKEY,
-			SKU,STORERKEY,EXTERNLINENO,QTYORDERED,QTYRECEIVED,
-			ALTSKU,
-			SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-			LOTTABLE06	
-		from    #itog
-    		where	addwho = 'asnclosed'
-	  --  select	p.EXTERNPOKEY,
-		 --   p.SKU,p.STORERKEY,p.EXTERNLINENO, p.QTYORDERED, pp.QTYRECEIVED,
-		 --   p.ALTSKU,
-		 --   pp.SUSR4, pp.LOTTABLE01, pp.LOTTABLE02, pp.LOTTABLE04, pp.LOTTABLE05,
-		 --   pp.LOTTABLE06
-	  --  from	(
-		 --   select	EXTERNPOKEY,
-			--    SKU,STORERKEY,EXTERNLINENO,QTYORDERED,
-			--    ALTSKU,
-			--    SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-			--    LOTTABLE06	
-		 --   from	#itog
-		 --   where	QTYORDERED > 0	
-		 --   ) p
-		 --   join (
-			--select  EXTERNPOKEY,
-			--	SKU,STORERKEY,EXTERNLINENO,QTYRECEIVED,
-			--	ALTSKU,
-			--	SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-			--	LOTTABLE06	
-			--from    #itog
-			--where   QTYRECEIVED > 0	
-		 --   ) pp
-		 --   on p.EXTERNPOKEY = pp.EXTERNPOKEY
-		 --   and p.storerkey = pp.storerkey
-		 --   and p.sku = pp.sku
-		 --   and p.LOTTABLE02 = pp.LOTTABLE02
-		 --   and p.LOTTABLE06 = pp.LOTTABLE06
+						update #result set LOTTABLE02=null where LOTTABLE02='' --Шевелев 24.03.2015
+						print 'Пытаемся вставить в обменные таблы DAX - после апдейта'
+				print 'тут должен быть селект'
+				insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].INFORINTEGRATIONLINE_RECEIVED
+					(   DataAReaID, 
+						DocID,		
+						ItemID,		
+						ORDEREDQTYDAX,	
+						PICKEDQTYINFOR,	
+						BarCodeString,	
+						InventLocationID, 
+						InventSerialID, 
+						PRODDATE,
+						InventExpireDate,
+						Status,
+						daxstatus,
+						RecID)
 
-	  --  union all	
-            	
-	  --  select	p.EXTERNPOKEY,
-		 --   p.SKU,p.STORERKEY,p.EXTERNLINENO, 0  as QTYORDERED, p.QTYRECEIVED,
-		 --   p.ALTSKU,
-		 --   p.SUSR4, p.LOTTABLE01, p.LOTTABLE02, p.LOTTABLE04, p.LOTTABLE05,
-		 --   p.LOTTABLE06
-	  --  from	(
-		 --   select	EXTERNPOKEY,
-			--    SKU,STORERKEY,EXTERNLINENO,QTYRECEIVED,
-			--    ALTSKU,
-			--    SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-			--    LOTTABLE06	
-		 --   from	#itog
-		 --   where	QTYRECEIVED > 0	
-		 --   ) p
-		 --   left join (
-			--select  EXTERNPOKEY,
-			--	SKU,STORERKEY,EXTERNLINENO,QTYORDERED,
-			--	ALTSKU,
-			--	SUSR4, LOTTABLE01, LOTTABLE02,LOTTABLE04, LOTTABLE05,
-			--	LOTTABLE06	
-			--from    #itog
-			--where   QTYORDERED > 0	
-		 --   ) pp
-		 --   on p.EXTERNPOKEY = pp.EXTERNPOKEY
-		 --   and p.storerkey = pp.storerkey
-		 --   and p.sku = pp.sku
-		 --   and p.LOTTABLE02 = pp.LOTTABLE02
-		 --   and p.LOTTABLE06 = pp.LOTTABLE06
-	  --  where	pp.EXTERNPOKEY is null
-	    )i	
-    	    	  
---if @error = 0
---begin
-
---	commit tran
-
---end	    
-    	    
-    print 'Пытаемся вставить в обменные таблы DAX'	    
-    declare @n bigint
-
-
-    select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
-
-
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
-    (DataAReaID, DocID, DocType, VendAccount, Invoiceid,
-     inventLocationID, 
-     Status,RecID)
-
-
-    select  'SZ',EXTERNPOKEY,POTYPE, SELLERNAME, BUYERADDRESS4, SUSR2,
-	    '5',
-	    @n + id as recid
-    from    #ii
-    
-    if @@ERROR <> 0
-    begin	    
-    	    print 'Пытаемся вставить в обменные таблы DAX - голова Ошибка'
-	    --set @error = 1
-	    goto endproc			
-
-    end
-
-    select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
-
-
-update #i set LOTTABLE02=null where LOTTABLE02='' --Шевелев 24.03.2015
-print 'Пытаемся вставить в обменные таблы DAX - после апдейта'
-    
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
-    (DataAReaID, DocID, ItemID, LineNumber,PackNormQty,OrderedQty,Qty,BarCodeString,
-    InventLocationID,InventBatchID,InventSerialID,InventExpireDate,InventSerialProdDate,Status,RecID)
-
-    select  --top 1
-	    'SZ',
-	    EXTERNPOKEY,SKU,EXTERNLINENO,
-	    --Ошибка, не преобразуется в число (тип PackNormQty = число) Охунов 28.09.2015
-	    --case when IsNull(LOTTABLE01,'') = '' then '0' else LOTTABLE01 end as LOTTABLE01,
-	   case when IsNull(LOTTABLE01,'') = ''
-	   OR ISNUMERIC(LOTTABLE01)=0 then 0 
-	   else convert (int,left(replace(LOTTABLE01,',','.'),
-	   case when charindex('.',replace(LOTTABLE01,',','.'))-1<1 then len(replace(LOTTABLE01,',','.'))
-	   else  charindex('.',replace(LOTTABLE01,',','.'))-1 end)) end as LOTTABLE01,
-	    QTYORDERED,QTYRECEIVED,
-	    Isnull(ALTSKU,'') as ALTSKU,
-	    SUSR4,IsNull(LOTTABLE06,'') as LOTTABLE06,IsNull(LOTTABLE02,'бс') as LOTTABLE02,
-	    IsNull(LOTTABLE05,'1900-01-01') as LOTTABLE05,IsNull(LOTTABLE04,'1900-01-01') as LOTTABLE04,'5',@n + id as recid	
-    from    #i
-    
-    if @@ERROR <> 0
+				select 'SZ',
+    					EXTERNPOKEY,
+    					SKU,
+						QTYORDERED,
+						QTYRECEIVED,
+						Isnull(ALTSKU,'') as ALTSKU,
+						case    
+							when r.SUSR4 = 'GENERAL' then 'СкладПродаж'
+							when r.SUSR4 = 'BRAKPRIEM' then 'ПТВПостащика'
+							when r.SUSR4 = 'PRETENZ' then 'ПеревложенияПоставщ'
+							when r.SUSR4 = 'LOSTPRIEM' then 'СкладПродаж' --НедовложенияПост
+							when r.SUSR4 = 'OVERPRIEM' then 'ПеревложенияПоставщ'
+							when r.SUSR4 = 'OX_PRIEM' then 'ОтветХранениеПост' -- Шевелев, 26.08.2016, приблуда к ОХ
+							when r.SUSR4 = 'VIRT' then 'ВиртПриход' -- Шевелев, 02.12.2016 - ВиртПриходМСК
+							when r.SUSR4 = 'SD' then 'СД'
+						end as SUSR4,
+						--case    
+						--	when  r.SUSR4 = 'GENERAL' then 'Москва'
+						--	when  r.SUSR4 = 'BRAKPRIEM' then 'МС_ПТВПостащика'
+						--	when  r.SUSR4 = 'PRETENZ' then 'МС_ПеревложенияПост'
+						--	when  r.SUSR4 = 'LOSTPRIEM' then 'МС_НедовложенияПост'
+						--	when  r.SUSR4 = 'OVERPRIEM' then 'МС_ПеревложенияПост'
+						--	when  r.SUSR4 = 'OX_PRIEM' then 'МС_ОтветХран' -- Шевелев, 26.08.2016, приблуда к ОХ
+						--	when  r.SUSR4 = 'SD' then 'МС_СД'
+						-- end as SUSR4,
+						IsNull(LOTTABLE02,'бс') as LOTTABLE02,
+						IsNull(LOTTABLE04,'1900-01-01') as LOTTABLE04,
+						IsNull(LOTTABLE05,'1900-01-01') as LOTTABLE05,
+						'27','5',@n + idpodet as recid	
+				from    #result r
+				join #pokey p on p.POKEY = r.pokey 
+			end
+			else
+				begin
+					print 'выгрузка не положена, документ 4-5'
+				end
+ 
+   if @@ERROR <> 0
     begin   	
 	    print 'Пытаемся вставить в обменные таблы DAX - детали Ошибка'
 	    --set @error = 1
 	    goto endproc
     end
-    
-    
-    if exists (select 1 from #i)
-    begin
-	print 'Создаем выходной датасет для ДА'
-	
-	update WH2.TRANSMITLOG
-	set KEY5 = '1'
-	where TRANSMITLOGKEY = @transmitlogkey	
-	
-	insert into #rt
-	select	'ASNCLOSED' filetype,
-		EXTERNPOKEY, POTYPE, SELLERNAME, BUYERADDRESS4, SUSR2,
-		SKU,STORERKEY,EXTERNLINENO, QTYORDERED, QTYRECEIVED,
-		ALTSKU,
-		SUSR4, LOTTABLE01, LOTTABLE02, LOTTABLE04, LOTTABLE05,
-		LOTTABLE06
-	from	#itog	
-	
-	
-	insert into #rt2
-	select	'ASNCLOSED' filetype,
-		EXTERNPOKEY, POTYPE, SELLERNAME, BUYERADDRESS4, SUSR2
-	from	#ii
-	
-	insert into #rt3
-	select	'ASNCLOSED' filetype,
-		EXTERNPOKEY, SKU,STORERKEY,EXTERNLINENO, QTYORDERED, QTYRECEIVED,
-		ALTSKU,
-		SUSR4, LOTTABLE01, LOTTABLE02, LOTTABLE04, LOTTABLE05,
-		LOTTABLE06
-	from	#i
-    	
-    
-    end
-
-ELSE
-PRINT 'НЕ ЗАШЛИ'
-end
 
 
 
-select * from #rt
+print 'обрабатываем поочередно все ЗЗ'
+	while 0 < (select count (pokey) from #pokey)
+		begin
+			select top(1) @pokey = pokey from #pokey
+			
+			select 
+				'RECEIPTCONFIRM' filetype,
+				p.STORERKEY storerkey,
+				p.OTHERREFERENCE receiptkey,
+				p.EXTERNPOKEY externpokey,
+				p.POKEY pokey,
+				p.POTYPE potype,
+				p.SUSR2 susr2,
+				p.SUSR3 susr3,
+				p.NOTES notes,
+				p.SELLERNAME sellername,
+				p.VESSEL vessel,
+				r.RECEIPTDATE receiptdate,
+				r.CLOSEDDATE closedate,
+				pd.SKU sku,
+				--pd.QTYORDERED qty,
+				pd.QTYADJUSTED - pd.QTYRECEIVED QR_BRAK,
+				pd.QTYADJUSTED qtyexpected,--оюиаемое
+				pd.QTYRECEIVED qtyreceived,--принятое
+				--pd.QR_BRAK QR_BRAK,--брак
+		--		0 QR_BRAK,
+				l.LOTTABLE01 packkey,
+				--case when l.LOTTABLE02 = @bs then @bsanalit else l.LOTTABLE02 end attribute02, --замена кода безсерийного товара инфор на код аналита
+				convert(varchar(20),l.LOTTABLE04,120) attribute04,
+				convert(varchar(20),l.LOTTABLE05,120) attribute05,
+				p.BUYERADDRESS4 numberdoc
+			from wh2.PO p join wh2.PODETAIL pd on p.POKEY = pd.pokey
+				join wh2.RECEIPT r on r.RECEIPTKEY = p.OTHERREFERENCE
+				left join wh2.LOTATTRIBUTE l on l.LOT = pd.susr5
+			where p.POKEY = @pokey and pd.QTYORDERED = 0
+			
+			delete from #pokey where POKEY = @pokey
+		end
+				
+-- После успешной выдачи результата дата-адаптеру
+print '9.1. обновление susr5 в переданном ПУО'
+	update r set r.susr5 = '9' from wh2.receipt r where r.receiptkey = @receiptkey
+	update wh2.TRANSMITLOG 	set KEY5 = '1'	where TRANSMITLOGKEY = @transmitlogkey	
 
-select * from #rt2
+print '9.2. обновление статуса ЗЗ'
+	update wh2.po set [status] = '11' where otherreference = @receiptkey
 
-select * from #rt3
-
+	update pod set [status] = '11' 
+		from wh2.po po, wh2.podetail pod 
+		where po.otherreference = @receiptkey and po.pokey = pod.pokey
 
 endproc:
-if @error = 1
-begin
-	
-	rollback tran
-	
-end
-if @error = 2
-begin
-	
-	delete 
-	from	WH2.RECEIPTDETAIL 
-	where	(ADDWHO = 'asnclosed' or EDITWHO = 'asnclosed') 
-		and RECEIPTKEY = @receiptkey
-		
-		
-	delete	
-	from	WH2.PODETAIL 
-	from	WH2.PODETAIL po
-		join WH2.PO p
-		    on p.POKEY = po.POKEY
-	where	(po.ADDWHO = 'asnclosed' or po.EDITWHO = 'asnclosed')
-		and  p.OTHERREFERENCE = @receiptkey
-	
-end
-	
+if @send_error = 1
+	begin
+		print 'отправляем сообщение об ошибке по почте'
+		print @msg_errdetails
+		set @source = 'proc_DA_CompositeASNClose'
+		insert into DA_InboundErrorsLog (source,msg_errdetails) values (@source,@msg_errdetails)		
+		exec app_DA_SendMail @source, @msg_errdetails						
+	end
 
---update WH2.TRANSMITLOG set ADDWHO = 'proc_DA_ReceiptConfirm' where TRANSMITLOGKEY  = @transmitlogkey
-
-IF OBJECT_ID('tempdb..#tl') IS NOT NULL DROP TABLE #tl
-IF OBJECT_ID('tempdb..#i') IS NOT NULL DROP TABLE #i
-IF OBJECT_ID('tempdb..#ii') IS NOT NULL DROP TABLE #ii
-IF OBJECT_ID('tempdb..#itog') IS NOT NULL DROP TABLE #itog
-IF OBJECT_ID('tempdb..#ned') IS NOT NULL DROP TABLE #ned
-IF OBJECT_ID('tempdb..#ned2') IS NOT NULL DROP TABLE #ned2
-IF OBJECT_ID('tempdb..#ned3') IS NOT NULL DROP TABLE #ned3
-IF OBJECT_ID('tempdb..#ned4') IS NOT NULL DROP TABLE #ned4
-IF OBJECT_ID('tempdb..#ned5') IS NOT NULL DROP TABLE #ned5
-IF OBJECT_ID('tempdb..#ned6') IS NOT NULL DROP TABLE #ned6
-IF OBJECT_ID('tempdb..#podetail') IS NOT NULL DROP TABLE #podetail
-IF OBJECT_ID('tempdb..#ned7') IS NOT NULL DROP TABLE #ned7
-IF OBJECT_ID('tempdb..#pokey') IS NOT NULL DROP TABLE #pokey
-IF OBJECT_ID('tempdb..#pr') IS NOT NULL DROP TABLE #pr
-IF OBJECT_ID('tempdb..#pr_it') IS NOT NULL DROP TABLE #pr_it
-IF OBJECT_ID('tempdb..#podetail') IS NOT NULL DROP TABLE #pr_it
 IF OBJECT_ID('tempdb..#receiptdetail') IS NOT NULL DROP TABLE #receiptdetail
-IF OBJECT_ID('tempdb..#rt') IS NOT NULL DROP TABLE #rt
-IF OBJECT_ID('tempdb..#rt2') IS NOT NULL DROP TABLE #rt2
-IF OBJECT_ID('tempdb..#rt3') IS NOT NULL DROP TABLE #rt3
-IF OBJECT_ID('tempdb..#t1') IS NOT NULL DROP TABLE #t1
-		
+IF OBJECT_ID('tempdb..#podetail') IS NOT NULL DROP TABLE #podetail
+IF OBJECT_ID('tempdb..#podetailresult') IS NOT NULL DROP TABLE #podetailresult
+IF OBJECT_ID('tempdb..#skuqty') IS NOT NULL DROP TABLE #skuqty
+IF OBJECT_ID('tempdb..#pokey') IS NOT NULL DROP TABLE #pokey
+IF OBJECT_ID('tempdb..#OutPOData') IS NOT NULL DROP TABLE #OutPOData
+IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result
+
+
+
+
 
 

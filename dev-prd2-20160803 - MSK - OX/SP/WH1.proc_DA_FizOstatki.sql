@@ -1,6 +1,3 @@
-
-
-
 ALTER PROCEDURE [WH1].[proc_DA_FizOstatki]
 	@wh varchar(30),
 	@transmitlogkey varchar (10)
@@ -82,10 +79,10 @@ drop table #altsku
 
 
 	select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-	from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
+	from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
 
 
-	insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
+	insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
 	(DataAReaID, sessionid, date, transdate, Type, itemid,itemname, Inventlocationid,
 	 inventbatchID, inventserialid, expiredate, manufacturedate,inventqtyonhandwms, 
 	 Status,RecID,barcodestring)
@@ -104,5 +101,4 @@ drop table #altsku
     
   
 IF OBJECT_ID('tempdb..#rt') IS NOT NULL DROP TABLE #rt
-
 

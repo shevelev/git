@@ -1,6 +1,3 @@
-
-
-
 ALTER PROCEDURE [WH1].[proc_DA_CancelSO](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
@@ -144,10 +141,10 @@ declare @n bigint
 
 
 select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 
 
-insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 (dataareaid, docid, doctype, operationtypeheader, invoiceid,
 salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
 inventlocationid,
@@ -172,10 +169,10 @@ if @@ERROR = 0
 begin	    
 	    
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 
 
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
     (dataareaid,salesidbase,docid,itemid,wmsrouteid,
     operationtypeheader,orderedqty,inventlocationid,
     inventbatchid,inventserialid,inventexpiredate,
@@ -224,7 +221,4 @@ from	#resultall
 IF OBJECT_ID('tempdb..#resultall') IS NOT NULL DROP TABLE #resultall
 IF OBJECT_ID('tempdb..#resulthead') IS NOT NULL DROP TABLE #resulthead
 IF OBJECT_ID('tempdb..#resultdetail') IS NOT NULL DROP TABLE #resultdetail
-
-
-
 

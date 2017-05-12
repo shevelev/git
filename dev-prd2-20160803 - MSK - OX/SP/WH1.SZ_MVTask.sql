@@ -1,13 +1,7 @@
-
-
 ALTER PROCEDURE [WH1].[SZ_MVTask] 
 AS
 
 set NOCOUNT on
-
---select * from wh1.taskdetail where STATUS = 0 and/**/ SKU = '19117'
---select * from wh1.ORDERDETAIL where ORDERKEY in ('0000007806','0000007809')
---select * from wh1.lotxlocxid where SKU = '19117' and QTY > 0
 
 	--set NOCOUNT on
 		delete from wh1.taskdetail where STATUS = '0' and TASKTYPE = 'MV' and ADDWHO = 'dareplen'
@@ -34,14 +28,8 @@ set NOCOUNT on
 		storerkey varchar(10) null,
 		packkey varchar(10) null,
 		casecnt float null,
-		--lottable01 varchar (30) null,
 		lottable02 varchar (50) null,
-		lottable06 varchar (50) null,
-		--lottable03 varchar (30) null,
-		lottable04 datetime null, --Шевелев 28.04.2015 +4,5атр
 		lottable05 datetime null, --Шевелев 28.04.2015 +4,5атр
-		--lottable07 varchar (30) null,
-		--lottable08 varchar (30) null,
 		orderkey varchar(18) null,
 		ORDERLINENUMBER varchar(10) null --Шевелев 16.06.2015
 	)
@@ -54,15 +42,8 @@ set NOCOUNT on
 		storerkey varchar(10) null,
 		packkey varchar(10) null,
 		casecnt float null,
-		--lottable01 varchar (30) null,
 		lottable02 varchar (50) null,
-		lottable06 varchar (50) null,--,
-		--lottable03 varchar (30) null,
-		lottable04 datetime null,  --Шевелев 28.04.2015 +4,5атр
-		lottable05 datetime null,  --Шевелев 28.04.2015 +4,5атр
-		--lottable07 varchar (30) null,
-		--lottable08 varchar (30) null--,
-		--orderkey varchar(18) null
+		lottable05 datetime null  --Шевелев 28.04.2015 +4,5атр
 	)
 
 	print 'выбираем необходимое количество товара'
@@ -74,29 +55,14 @@ set NOCOUNT on
 	*/
 	insert	into #orderdetail_prepare
 	select SUM(od.ORIGINALQTY) qty, 
-		--SUM(od.ORIGINALQTY) - floor(SUM(od.ORIGINALQTY)/case when isnull(p.casecnt,1) = 0 then 1 else isnull(p.casecnt,1) end)*p.casecnt eaqty, 
 		od.SKU, 
 		od.STORERKEY, 
 		NULL,--op.PACKKEY,
 		isnull(p.CASECNT,op.CASECNT) as CASECNT,
-		--op.CASECNT,
-		--od.LOTTABLE01, 
 		od.LOTTABLE02, 
-		od.LOTTABLE06,
 -- ATTENTION !!!
-		--'OK' lottable03,  /* тут непонятно - зачем расчет атрибута??  получается при пополнении всегда считается что атрибут = ОК,независимо от того что в заказе */
-		od.LOTTABLE04,   --Шевелев 28.04.2015 +4,5атр
 		od.LOTTABLE05,   --Шевелев 28.04.2015 +4,5атр
 -- ATTENTION !!!
-		/* VC 05/09/2011 
-			заменен расчет атрибутов 07,08 на их значения из строки заказа.
-			в противном случае всегда считается что 8й атр = ОК, а 7й зависит от типа заказа
-			и в случае изменения/появления нового типа приводит к правке и в этом месте. */
-		--case when o.TYPE = '101' then 'BRAK' else 'OK' end lottable07,
-		--'OK' lottable08,
-		--od.LOTTABLE07,
-		--od.LOTTABLE08,
-		
 		od.ORDERKEY, od.ORDERLINENUMBER
 	from	wh1.ORDERDETAIL od
 		join #orders o on o.ORDERKEY = od.ORDERKEY
@@ -106,12 +72,7 @@ set NOCOUNT on
 				la.SKU,
 				la.STORERKEY,
 				la.LOTTABLE02,
-				la.LOTTABLE06,
-				--la.LOTTABLE03,
-				la.LOTTABLE04,  --Шевелев 28.04.2015 +4,5атр
 				la.LOTTABLE05,  --Шевелев 28.04.2015 +4,5атр
-				--la.LOTTABLE07,
-				--la.LOTTABLE08,
 				max(p.CASECNT) as CASECNT
 			from wh1.LOT l
 				join wh1.LOTATTRIBUTE la on la.LOT = l.LOT
@@ -121,29 +82,15 @@ set NOCOUNT on
 				la.SKU,
 				la.STORERKEY,
 				la.LOTTABLE02,
-				la.LOTTABLE06,
-				--la.LOTTABLE03,
-				la.LOTTABLE04,  --Шевелев 28.04.2015 +4,5атр
 				la.LOTTABLE05  --Шевелев 28.04.2015 +4,5атр
-				--la.LOTTABLE07,
-				--la.LOTTABLE08
 		) p on p.SKU = od.SKU and p.STORERKEY = od.STORERKEY
 			and p.LOTTABLE02 = od.LOTTABLE02
-			and p.LOTTABLE06 = od.LOTTABLE06
-			--and p.LOTTABLE03 = od.LOTTABLE03
-			and (p.LOTTABLE04 = od.LOTTABLE04 or p.LOTTABLE04 is NULL and od.LOTTABLE04 is NULL)  --Шевелев 28.04.2015 +4,5атр
 			and (p.LOTTABLE05 = od.LOTTABLE05 or p.LOTTABLE05 is NULL and od.LOTTABLE04 is NULL)  --Шевелев 28.04.2015 +4,5атр
-			--and p.LOTTABLE07 = od.LOTTABLE07
-			--and p.LOTTABLE08 = od.LOTTABLE08
 			
 	where od.ORIGINALQTY != 0
 	group by od.sku, od.storerkey,
-		--op.PACKKEY,
-		--op.CASECNT,
 		isnull(p.CASECNT,op.CASECNT),
-		--od.LOTTABLE01, 
-		od.LOTTABLE02,od.LOTTABLE06, od.LOTTABLE04, od.LOTTABLE05,-- od.LOTTABLE07, od.LOTTABLE08,  --Шевелев 28.04.2015 +4,5атр
-		o.TYPE, od.ORDERKEY, od.ORDERLINENUMBER
+		od.LOTTABLE02,/*od.LOTTABLE06, od.LOTTABLE04,*/ od.LOTTABLE05, o.TYPE, od.ORDERKEY, od.ORDERLINENUMBER
 		
 			 
 	print '   - исключаем строки с упаковкой равной 1 штука в ящике'
@@ -166,16 +113,10 @@ set NOCOUNT on
 		packkey, 
 		casecnt,
 		LOTTABLE02,
-		LOTTABLE06, 
-		--lottable03, 
-		LOTTABLE04,   --Шевелев 28.04.2015 +4,5атр
 		LOTTABLE05  --Шевелев 28.04.2015 +4,5атр
-		--lottable07,
-		--lottable08
 	from #orderdetail_prepare od 
 	group by sku, storerkey, casecnt,
-		od.LOTTABLE02,od.LOTTABLE06, od.LOTTABLE04, od.LOTTABLE05,--od.LOTTABLE03, od.LOTTABLE04, od.LOTTABLE05,lottable07,lottable08,  --Шевелев 28.04.2015 +4,5атр
-		od.packkey 
+		od.LOTTABLE02,/*od.LOTTABLE06, od.LOTTABLE04,*/ od.LOTTABLE05,	od.packkey 
 	/* VC 26/08/2011 end */
 
 --select * from #orderdetail where sku = '19117'
@@ -193,12 +134,7 @@ set NOCOUNT on
 		locationtype varchar (50) null,
 		lottable01 varchar (50) null,
 		lottable02 varchar (50) null,
-		lottable06 varchar (50) null,
-		--lottable03 varchar (30) null,
-		lottable04 datetime null,  --Шевелев 28.04.2015 +4,5атр
 		lottable05 datetime null,  --Шевелев 28.04.2015 +4,5атр
-		--lottable07 varchar (30) null,
-		--lottable08 varchar (30) null,
 		lot varchar(10),
 		pid varchar(20),
 		locroute varchar (20)
@@ -208,40 +144,24 @@ set NOCOUNT on
 	print 'выбираем товары на остатках'
 	insert into #skuqty
 		select 
-			--ih.id, lxl.id,*
 			p.CASECNT,
 			SUM(lxl.QTY-QTYALLOCATED) qty,
 			floor(SUM(lxl.QTY-QTYALLOCATED)/(case when isnull(p.CASECNT,0) = 0 then 1 else p.CASECNT end))*isnull(p.CASECNT,0) ,
-			--0 qtycase,
-			--(lxl.QTY-QTYALLOCATED) qty,
-			--(lxl.QTY-QTYALLOCATED)/p.CASECNT*p.CASECNt qtycase,		
 			 od.SKU, 
 			 od.STORERKEY, 
 			 lxl.loc, 
 			 l.LOCATIONTYPE,
-			--lli.LOTTABLE01, 
 			p.CASECNT as LOTTABLE01,
-			od.LOTTABLE02, od.LOTTABLE06,od.LOTTABLE04, od.LOTTABLE05,--od.LOTTABLE03, od.LOTTABLE04, od.LOTTABLE05, od.LOTTABLE07, od.LOTTABLE08,   --Шевелев 28.04.2015 +4,5атр
-			lli.lot, 
-			lxl.ID, 
-			l.LOGICALLOCATION 
+			od.LOTTABLE02, /*od.LOTTABLE06,od.LOTTABLE04, */od.LOTTABLE05,	lli.lot, lxl.ID, l.LOGICALLOCATION 
 		from #ORDERDETAIL od
 			join wh1.LOTATTRIBUTE lli on od.sku = lli.SKU 
 				and od.storerkey = lli.STORERKEY 
 				and isnull(lli.LOTTABLE02,'') = isnull(od.LOTTABLE02,'')
-				and isnull(lli.LOTTABLE06,'') = isnull(od.LOTTABLE06,'')
-				--and isnull(lli.LOTTABLE02,'') = case when isnull(od.LOTTABLE02,'') = '' then isnull(lli.LOTTABLE02,'') else isnull(od.LOTTABLE02,'') end
-				--and lli.LOTTABLE02 = isnull(od.LOTTABLE02,'')
-				--and lli.LOTTABLE03 = od.LOTTABLE03
-				and isnull(lli.LOTTABLE04,'') = case when isnull(od.LOTTABLE04,'') = '' then isnull(lli.LOTTABLE04,'') else isnull(od.LOTTABLE04,'') end  --Шевелев 28.04.2015 +4,5атр
 				and isnull(lli.LOTTABLE05,'') = case when isnull(od.LOTTABLE05,'') = '' then isnull(lli.LOTTABLE05,'') else isnull(od.LOTTABLE05,'') end  --Шевелев 28.04.2015 +4,5атр
-				--and lli.LOTTABLE07 = od.LOTTABLE07
-				--and lli.LOTTABLE08 = od.LOTTABLE08
 			join wh1.LOTXLOCXID lxl on lli.LOT = lxl.LOT 
 			join wh1.loc l on l.LOC = lxl.loc
-			left join wh1.INVENTORYHOLD ih on ih.loc = lxl.LOC or ih.LOT = lxl.LOT --or isnull(ih.ID,'') = isnull(lxl.id,'')
+			left join wh1.INVENTORYHOLD ih on ih.loc = lxl.LOC or ih.LOT = lxl.LOT 
 			join wh1.PACK p on lli.LOTTABLE01 = p.PACKKEY
-			--join wh1.PACK p on od.packkey = p.PACKKEY
 		where lxl.qty != 0 
 			and (l.LOC != 'LOST')
 			and l.LOCATIONTYPE in ('pick','case','other')
@@ -253,12 +173,9 @@ set NOCOUNT on
 			lxl.LOC,
 			l.LOCATIONTYPE, 
 			p.CASECNT,
-			--lli.LOTTABLE01, 
+
 			lxl.LOC,
-			od.LOTTABLE02,od.LOTTABLE06, od.LOTTABLE04, od.LOTTABLE05 ,--od.lottable03, od.LOTTABLE04, od.LOTTABLE05 , od.LOTTABLE07, od.LOTTABLE08,   --Шевелев 28.04.2015 +4,5атр
-			lli.lot, 
-			lxl.id, 
-			l.LOGICALLOCATION 
+			od.LOTTABLE02,/*od.LOTTABLE06, od.LOTTABLE04,*/ od.LOTTABLE05 ,	lli.lot, lxl.id, l.LOGICALLOCATION 
 		order by lli.lot
 --select * from #skuqty order by sku
 
@@ -270,13 +187,7 @@ set NOCOUNT on
 				join wh1.LOTATTRIBUTE la on lli.LOT = la.LOT and	
 						sq.sku = la.SKU and sq.storerkey = la.STORERKEY 
 						and isnull(la.LOTTABLE02,'') = isnull(sq.LOTTABLE02,'')
-						and isnull(la.LOTTABLE06,'') = isnull(sq.LOTTABLE06,'')
-						--and isnull(la.LOTTABLE02,'') = case when isnull(sq.LOTTABLE02,'') = '' then isnull(la.LOTTABLE02,'') else isnull(sq.LOTTABLE02,'') end
-						--and la.LOTTABLE03 = sq.LOTTABLE03
-						and isnull(la.LOTTABLE04,'') = case when isnull(sq.LOTTABLE04,'') = '' then isnull(la.LOTTABLE04,'') else isnull(sq.LOTTABLE04,'') end --Шевелев 28.04.2015 +4,5атр
 						and isnull(la.LOTTABLE05,'') = case when isnull(sq.LOTTABLE05,'') = '' then isnull(la.LOTTABLE05,'') else isnull(sq.LOTTABLE05,'') end --Шевелев 28.04.2015 +4,5атр
-						--and la.LOTTABLE07 = sq.LOTTABLE07
-						--and la.LOTTABLE08 = sq.LOTTABLE08
 			where lli.LOC = 'EA_IN' and lli.QTY != 0
 
 
@@ -299,9 +210,7 @@ set NOCOUNT on
 
 	while exists(select sku from #orderdetail)
 		begin print'есть необработанные товары'
-		
-			--select top(1) @odid = ID, @qtypickneed = qty from #orderdetail --выбор строки товара из заказа. 15:31 2011/06/08
-	--		select top(1) @sku = sku, @odid = ID, @qtypickneed = qty - floor(qty/case when casecnt = 0 or isnull(casecnt,0) = 0 then 1 else casecnt end)*isnull(casecnt,0) from #orderdetail --выбор строки товара из заказа.		
+
 			select top(1) @sku = sku, @odid = ID, @qtypickneed = qty 
 			/* 
 			VC 26/08/2011	
@@ -314,9 +223,6 @@ set NOCOUNT on
 				else floor(qty/casecnt)*casecnt end*/
 			from #orderdetail --выбор строки товара из заказа.		
 			print 'необходимое количество ' + cast( @qtypickneed as varchar(20)) + '. товар ' + @sku
-			--select sku, ID, qty, casecnt, qty - floor(qty/case when casecnt = 0 or isnull(casecnt,0) = 0 then 1 else casecnt end)*isnull(casecnt,0) 
-			--from #orderdetail --выбор строки товара из заказа.		
-			
 			
 			-- вставка товаров по товару из заказа
 			insert into #skuqtysku
@@ -327,29 +233,17 @@ set NOCOUNT on
 					fq.sku,fq.storerkey,fq.loc,fq.locationtype,
 					fq.lottable01,
 					fq.lottable02,
-					fq.lottable06, fq.lottable04,fq.lottable05, --Шевелев 28.04.2015 +4,5атр
-					--fq.lottable03,fq.lottable04,fq.lottable05,fq.lottable07,fq.lottable08, 
+					fq.lottable05, --Шевелев 28.04.2015 +4,5атр
 					fq.lot, fq.pid, fq.locroute
 				from	#skuqty fq 
 					join #orderdetail od 
 					    on fq.sku = od.sku 
 					    and fq.storerkey = od.storerkey
 					    and isnull(fq.LOTTABLE02,'') = isnull(od.LOTTABLE02,'')
-					    and isnull(fq.LOTTABLE06,'') = isnull(od.LOTTABLE06,'')
-					    --and isnull(fq.LOTTABLE02,'') = case when isnull(od.LOTTABLE02,'') = '' then isnull(fq.LOTTABLE02,'') else isnull(od.LOTTABLE02,'') end
-					    --and fq.LOTTABLE03 = od.LOTTABLE03
-					    and isnull(fq.LOTTABLE04,'') = case when isnull(od.LOTTABLE04,'') = '' then isnull(fq.LOTTABLE04,'') else isnull(od.LOTTABLE04,'') end --Шевелев 28.04.2015 +4,5атр
 					    and isnull(fq.LOTTABLE05,'') = case when isnull(od.LOTTABLE05,'') = '' then isnull(fq.LOTTABLE05,'') else isnull(od.LOTTABLE05,'') end --Шевелев 28.04.2015 +4,5атр
-					    --and fq.LOTTABLE06 = 
-					    --and fq.LOTTABLE07 = od.LOTTABLE07
-					    --and fq.LOTTABLE08 = od.LOTTABLE08
-					    --and fq.LOTTABLE09 = 
-					    --and fq.LOTTABLE10 = 
 				where od.id= @odid
 				
 				select @qtypick = isnull(SUM(qty),0) from #skuqtysku where locationtype = 'pick'
-				--select 'qqqq',* from #skuqtysku
-				--select SUM(qty) from #skuqtysku where locationtype = 'PICK'			
 				
 				if @qtypick < @qtypickneed 
 					begin -- количество товара в зоне штучного отбора меньше необходимого.
@@ -463,6 +357,4 @@ set NOCOUNT on
 	drop table #orders
 	drop table #skuqty
 	drop table #skuqtysku
-
-
 

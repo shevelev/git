@@ -1,7 +1,5 @@
-
-
------- [spb-sql1202] - new test server
------- [spb-sql1202] - old test server
+------ [SPB-SQL1210DBE\MSSQLDBE] - new test server
+------ [SPB-SQL1210DBE\MSSQLDBE] - old test server
 ----- [SPB-DAXDEV] - old test server
 ----- [SPB-SQL1210DBE\MSSQLDBE] - real server
 
@@ -213,6 +211,7 @@ EXEC	@return_value1 = [dbo].[proc_DA_ReceiptConfirm_attr]
 			    when r.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
 			    when r.TOLOC = 'PRETENZ' then 'PRETENZ'
 			    when r.TOLOC = 'OX_PRIEM' then 'OX_PRIEM'  -- Шевелев, 26.08.2016, приблуда к ОХ
+			    when r.TOLOC = 'VIRT' then 'VIRT' -- Шевелев, 02.12.2016 - ВиртПриходМСК
 			    else 'GENERAL'
 	    end as SCLAD,
 	    sum(r.QTYRECEIVED) as sumqtyreceived,
@@ -233,6 +232,7 @@ EXEC	@return_value1 = [dbo].[proc_DA_ReceiptConfirm_attr]
 			    when r.TOLOC = 'LOSTPRIEM' then 'LOSTPRIEM'
 			    when r.TOLOC = 'PRETENZ' then 'PRETENZ'
 			    when r.TOLOC = 'OX_PRIEM' then 'OX_PRIEM'  -- Шевелев, 26.08.2016, приблуда к ОХ
+			    when r.TOLOC = 'VIRT' then 'VIRT' -- Шевелев, 02.12.2016 - ВиртПриходМСК
 			    else 'GENERAL'
 	    end,
 	    r.SUSR1--,
@@ -1401,6 +1401,7 @@ EXEC	@return_value1 = [dbo].[proc_DA_ReceiptConfirm_attr]
 		    when  p2.SUSR4 = 'LOSTPRIEM' then 'НедовложенияПост'
 		    when  p2.SUSR4 = 'OVERPRIEM' then 'ПеревложенияПоставщ'
 		    when  p2.SUSR4 = 'OX_PRIEM' then 'ОтветХранениеПост' -- Шевелев, 26.08.2016, приблуда к ОХ
+		    when  p2.SUSR4 = 'VIRT' then 'ВиртПриход' -- Шевелев, 02.12.2016 - ВиртПриходМСК
 		    when  p2.SUSR4 = 'SD' then 'СД'
 	    end as SUSR4,
 	    p2.LOTTABLE01, p2.LOTTABLE02, p2.LOTTABLE04, p2.LOTTABLE05,
@@ -1449,10 +1450,10 @@ EXEC	@return_value1 = [dbo].[proc_DA_ReceiptConfirm_attr]
 
 
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
 
 
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInputOrdersFromWMS
     (DataAReaID, DocID, DocType, VendAccount, Invoiceid,
      inventLocationID, 
      Status,RecID)
@@ -1472,13 +1473,13 @@ EXEC	@return_value1 = [dbo].[proc_DA_ReceiptConfirm_attr]
     end
 
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
 
 
 update #i set LOTTABLE02=null where LOTTABLE02='' --Шевелев 24.03.2015
 print 'Пытаемся вставить в обменные таблы DAX - после апдейта'
     
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInputOrderLinesFromWMS
     (DataAReaID, DocID, ItemID, LineNumber,PackNormQty,OrderedQty,Qty,BarCodeString,
     InventLocationID,InventBatchID,InventSerialID,InventExpireDate,InventSerialProdDate,Status,RecID)
 
@@ -1602,5 +1603,4 @@ IF OBJECT_ID('tempdb..#rt') IS NOT NULL DROP TABLE #rt
 IF OBJECT_ID('tempdb..#rt2') IS NOT NULL DROP TABLE #rt2
 IF OBJECT_ID('tempdb..#rt3') IS NOT NULL DROP TABLE #rt3
 IF OBJECT_ID('tempdb..#t1') IS NOT NULL DROP TABLE #t1
-		
 

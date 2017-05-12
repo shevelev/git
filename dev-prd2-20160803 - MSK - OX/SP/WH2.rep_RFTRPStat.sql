@@ -32,4 +32,3 @@ order by R.RPcount desc, R.toloc, s.descr
 
 END
 
-

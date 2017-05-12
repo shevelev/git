@@ -41,7 +41,7 @@ declare	@sql varchar (max),
 			O.ORDERDATE, O.CONSIGNEEKEY, st1.COMPANY AS conscomp, 
 			st1.ADDRESS1 AS consaddress, PK.SERIALKEY, 
 			cast(ISNULL ( P.CARTONGROUP , 'PALLET') as varchar(20)) AS SEL_CARTONGROUP,
-			cast(isnull(sk.susr4, 'шт.') as varchar(20)) baseMeasure, sk.susr6,p.lot, la.LOTTABLE03 as LOTTABLE03, la.LOTTABLE05 as LOTTABLE05
+			cast(isnull(sk.susr4, 'шт.') as varchar(20)) baseMeasure, sk.susr6,p.lot, la.LOTTABLE02 as LOTTABLE03, la.LOTTABLE05 as LOTTABLE05
 			,car.COMPANY CarrierName
 	into #Sel
 	FROM wh1.PICKDETAIL AS P 
@@ -60,12 +60,12 @@ declare	@sql varchar (max),
 						 P.FROMLOC, P.LOC AS Expr1,
 						case when (p.id <> '') then 'ѕаллета' else 'ящик' end CaseDescr,
 						case when (p.id <> '') then 1 else 1 end CaseType,
-						P.STATUS, P.ID,	p.lot, p.packkey, P.CARTONGROUP, la.LOTTABLE03, la.LOTTABLE05
+						P.STATUS, P.ID,	p.lot, p.packkey, P.CARTONGROUP, la.LOTTABLE02, la.LOTTABLE05
 	into #picks
 	from wh1.PICKDETAIL AS P 
 	left join wh1.LOTATTRIBUTE la on la.sku = p.sku and la.STORERKEY = p.STORERKEY
 	where 1=2
-	group by P.ORDERKEY, P.STORERKEY, P.SKU, P.CASEID, P.FROMLOC , P.LOC, p.id, P.STATUS, p.lot, p.packkey, CARTONGROUP, la.LOTTABLE03, la.LOTTABLE05
+	group by P.ORDERKEY, P.STORERKEY, P.SKU, P.CASEID, P.FROMLOC , P.LOC, p.id, P.STATUS, p.lot, p.packkey, CARTONGROUP, la.LOTTABLE02, la.LOTTABLE05
 
 	set @sql = '
 	  set dateformat dmy
@@ -73,7 +73,7 @@ declare	@sql varchar (max),
 					 P.FROMLOC, isnull(TD.FROMLOC,'''') AS Expr1, 
 					''ящик'' CaseDescr,
 					1 CaseType,
-					P.STATUS, P.ID,	p.lot, p.packkey, p.CARTONGROUP, max(la.LOTTABLE03), max(la.LOTTABLE05)
+					P.STATUS, P.ID,	p.lot, p.packkey, p.CARTONGROUP, max(la.LOTTABLE02), max(la.LOTTABLE05)
 				from '+@wh+'.PICKDETAIL AS P 
 				left join '+@wh+'.TASKDETAIL TD on P.CASEID=TD.CASEID and P.PICKDETAILKEY=TD.PICKDETAILKEY
 				left JOIN '+@wh+'.SKU AS S ON S.STORERKEY = P.STORERKEY AND S.SKU = P.SKU 
@@ -104,7 +104,7 @@ print (@sql)
 					1 CaseType,
 					L.LOGICALLOCATION, P.STATUS, O.DOOR, P.ID, S.COMPANY AS Expr2, PK.CASECNT, O.ORDERDATE, O.CONSIGNEEKEY, st1.COMPANY AS conscomp, 
 					st1.ADDRESS1 AS consaddress, PK.SERIALKEY,ISNULL ( P.CARTONGROUP , ''PALLET'') AS sel_CARTONGROUP,
-					isnull(sk.susr4, ''шт.'') baseMeasure, sk.susr6,p.lot, p.LOTTABLE03, p.LOTTABLE05,car.COMPANY CarrierName
+					isnull(sk.susr4, ''шт.'') baseMeasure, sk.susr6,p.lot, p.LOTTABLE02, p.LOTTABLE05,car.COMPANY CarrierName
 				FROM  #picks AS P 
 					LEFT JOIN '+@wh+'.STORER AS S ON P.STORERKEY = S.STORERKEY 
 					LEFT JOIN '+@wh+'.SKU AS SK ON SK.STORERKEY = P.STORERKEY AND SK.SKU = P.SKU 

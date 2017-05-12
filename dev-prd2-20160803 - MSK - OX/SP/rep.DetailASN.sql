@@ -44,7 +44,7 @@ as
 		ceiling((sku.stdcube*(qtyExpected+QTYRECEIVED))/cast(@placeVol as varchar)) PalletPlaceAvg,
 		ceiling((qtyExpected+QTYRECEIVED)/case p.pallet when 0 then 1 else p.pallet end)  PalletPlaceRFPack,
 		case  when isnull(p.pallet,0)=0 or isnull(p.casecnt,0)=0 then 1 else 0 end ErrInPack,
-		cast(@showHist as varchar) showHist, rd.STORERKEY
+		cast(@showHist as varchar) showHist
 	from WH1.receiptdetail rd
 		join WH1.sku sku on sku.storerkey=rd.storerkey and sku.sku=rd.sku
 		join WH1.storer st on rd.storerkey=st.storerkey

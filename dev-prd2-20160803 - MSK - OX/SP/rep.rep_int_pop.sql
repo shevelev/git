@@ -1,8 +1,7 @@
 ALTER PROCEDURE [rep].[rep_int_pop] (
 	@sku varchar(10) = NULL,
 	@orderkey varchar(10) = NULL,
-	@route varchar(10) = NULL,
-	@st varchar(10)
+	@route varchar(10) = NULL
 )
 AS
 BEGIN
@@ -10,11 +9,9 @@ BEGIN
 	select
 		@sku = nullif(rtrim(@sku),''),
 		@orderkey = nullif(rtrim(@orderkey),''),
-		@route = nullif(rtrim(@route),''),
-		@st = nullif(rtrim(@st),'')
+		@route = nullif(rtrim(@route),'')
 	
 	create table #rezZz (
-		storerkey varchar(10),
 		orderkey varchar(20),
 		[route] varchar(10),
 		departuretime datetime,
@@ -36,7 +33,6 @@ BEGIN
 
 	insert into #rezZz
 	select
-		od.STORERKEY,
 		od.ORDERKEY,
 		lh.[ROUTE],
 		lh.DEPARTURETIME,
@@ -55,19 +51,20 @@ BEGIN
 		td.TOLOC,
 		'Пополнение склада' descr
 	from wh1.ORDERDETAIL od
-		join wh1.SKU s on s.SKU = od.sku and s.STORERKEY=od.STORERKEY
+		join wh1.SKU s on s.SKU = od.sku
 		join wh1.ORDERS o
 			join wh1.LOADORDERDETAIL lo
+				--join wh1.STORER s on lo.CUSTOMER = s.STORERKEY
 				join wh1.LOADSTOP ls
 					join wh1.LOADHDR lh on ls.LOADID = lh.LOADID
 				on lo.LOADSTOPID = ls.LOADSTOPID
-			on o.ORDERKEY = lo.SHIPMENTORDERID 
-		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09') and o.STORERKEY=od.STORERKEY
+			on o.ORDERKEY = lo.SHIPMENTORDERID
+		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09')
 		join wh1.TASKDETAIL td on od.SKU = td.SKU
 		join wh1.LOTATTRIBUTE l
 			left join wh1.PACK p on l.LOTTABLE01 = p.PACKKEY 
-		on l.LOT = td.LOT and l.STORERKEY=od.STORERKEY
-	where td.TASKTYPE = 'MV' and od.STORERKEY=@st
+		on l.LOT = td.LOT
+	where td.TASKTYPE = 'MV'
 		and td.[STATUS] = '0'
 		and ( @orderkey is NULL or od.ORDERKEY = @orderkey )
 		and ( @sku is NULL or td.SKU = @sku )
@@ -76,7 +73,6 @@ BEGIN
 	union all
 
 	select
-		od.STORERKEY,
 		od.ORDERKEY,
 		lh.[ROUTE],
 		lh.DEPARTURETIME,
@@ -95,7 +91,7 @@ BEGIN
 		'' as TOLOC,
 		'Размещение с EA_IN' descr
 	from wh1.ORDERDETAIL od
-		join wh1.SKU s on s.SKU = od.SKU and s.STORERKEY=od.STORERKEY
+		join wh1.SKU s on s.SKU = od.SKU
 		join wh1.ORDERS o
 			join wh1.LOADORDERDETAIL lo
 				--join wh1.STORER s on lo.CUSTOMER = s.STORERKEY
@@ -103,11 +99,11 @@ BEGIN
 					join wh1.LOADHDR lh on ls.LOADID = lh.LOADID
 				on lo.LOADSTOPID = ls.LOADSTOPID
 			on o.ORDERKEY = lo.SHIPMENTORDERID
-		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09') and o.STORERKEY=od.STORERKEY
-		join wh1.LOTxLOCxID lxlx on od.SKU = lxlx.SKU and lxlx.STORERKEY=od.STORERKEY
-		join wh1.LOTATTRIBUTE l on l.LOT = lxlx.LOT and l.STORERKEY=od.STORERKEY
+		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09')
+		join wh1.LOTxLOCxID lxlx on od.SKU = lxlx.SKU
+		join wh1.LOTATTRIBUTE l on l.LOT = lxlx.LOT
 	where lxlx.LOC = 'EA_IN'
-		and lxlx.QTY > 0 and lxlx.STORERKEY=@st
+		and lxlx.QTY > 0
 		and lxlx.ID = ''
 		and ( @orderkey is NULL or od.ORDERKEY = @orderkey )
 		and ( @sku is NULL or lxlx.SKU = @sku )

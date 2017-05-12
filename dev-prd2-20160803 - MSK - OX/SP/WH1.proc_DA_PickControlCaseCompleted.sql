@@ -1,7 +1,3 @@
-
-
-
-
 -- ПОДТВЕРЖДЕНИЕ ОКОНЧАНИЯ КОНТРОЛЯ ЗАКАЗА
 
 ALTER PROCEDURE [WH1].[proc_DA_PickControlCaseCompleted](
@@ -213,34 +209,22 @@ BEGIN
 				o.susr3,
 				o.C_CONTACT1,
 				o.REQUESTEDSHIPDATE,
-				--o.susr4,
-				--o.susr5,
 				od.sku,
 				od.packkey,
-				case when od.LOTTABLE02 = '' then 'бс' else      od.LOTTABLE02      end AS LOTTABLE02, --od.LOTTABLE02, 
+				case when od.LOTTABLE02 = '' then 'бс' else      od.LOTTABLE02      end AS LOTTABLE02,
+				--od.LOTTABLE02, 
 				convert(varchar(12),ISNULL(od.lottable04,'19000101'),112) as LOTTABLE04, --od.LOTTABLE04, 
 				convert(varchar(12),ISNULL(od.lottable05,'19000101'),112) as LOTTABLE05, --od.LOTTABLE05, 
-				od.NOTES, --Изменено на 7 атрибут, в 6 атрибуте стоит left(25 От партии дакс)
-				--case when od.LOTTABLE02 = @bs then @bsanalit else od.LOTTABLE02 end,
-				--case when od.LOTTABLE02 = '' then @bsanalit else od.LOTTABLE02 end,
-				--convert(varchar(20),od.LOTTABLE04,120),
-				--convert(varchar(20),od.LOTTABLE05,120),
+				od.NOTES, 
 				od.openqty as [openqty],
 				case when od.QTYPICKED = 0 then od.SHIPPEDQTY else od.QTYPICKED end as [packedqty],
-				--convert(varchar(20),o.editdate,120)--,
 				@boxnum as boxnum
-				--od.externlineno,
-				--sum(t.qty) packedqty,
-				--isnull(o.transportationmode,'0') shippingfinished,
-				--isnull(od.lottable03,'') stage,
-				--isnull(od.susr4,'') rma
 			from	wh1.orders o 
 				join wh1.orderdetail od 
 				    on o.orderkey = od.orderkey
-	--			join #tmp t on t.orderkey = o.orderkey and t.orderlinenumber = od.orderlinenumber -- and t.sku = od.sku and t.storerkey = od.storerkey
 			where	o.orderkey = @orderkey
         		
-        		
+select * from #result
         		
 			update	pd 
 			set	pd.pdudf1 = '6'
@@ -263,43 +247,71 @@ BEGIN
 			print 'выгружаем результат в DAX'
         	
         	select * from #result
-
-			select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
+        	
+        	-- Шапка для обновления статуса, на скомплектовано
+				update daxTable
+						set	daxTable.status = '26',
+							daxTable.boxnum = r.boxnum
+							--daxTable.daxstatus = '26'
+					from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] daxTable
+					join #result r on 
+						daxTable.docid	= r.externorderkey	-- Внешний номер
+				
+				if @@ROWCOUNT <> 0
+				begin
+				-- Детали для обновления статуса+кол-во скомплектованного в деталях.		
+					update dax
+							set dax.pickedqtyinfor = r.packedqty,
+								dax.status = '26'
+						from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT] dax
+						join #result r on 
+							dax.docid	= r.externorderkey and	-- Внешний номер
+							dax.itemid	= r.sku and				-- Товар
+							--dax.inventserialid = r.LOTTABLE02 and	-- Серия
+							dax.inventserialid = case when r.LOTTABLE02 = '' then 'бс' else r.LOTTABLE02 end and	-- Серия
+							dax.INVENTEXPIREDATE = convert(varchar(12),ISNULL(r.lottable05,'19000101'),112) and
+							dax.inventlocationid = r.susr1 --and	-- Склад
+							--dax.ORDEREDQTYDAX = r.openqty		-- заказанное кол-во
+							
+					where r.orderkey = @orderkey	
+				end
+        	
+			
+			------select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+			------from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT]
+			
+			------insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT]
+			------(dataareaid,INFORDAXSYSTEM,docid,doctype, CUSTVENDAC,inventlocationid,status,daxstatus,WMSPickingRouteId , boxnum,recid)
+			--------(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
+			--------consigneeaccount_ru,inventlocationid,status,boxcount,recid)
+	    		
+			------select	distinct 'SZ','1', externorderkey,[type], 
+			------	consigneekey,susr1 as inventlocationid, '26' as status, '5' as daxstatus,susr2,boxnum,@n + 1 as recid
+			------from	#result
         		
-			insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
-			(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
-			consigneeaccount_ru,inventlocationid,status,boxcount,recid)
-        		
-			select	distinct 'SZ',externorderkey,[type],susr3 as invoiceid,c_contact1 as salesidbase,susr2 as wmspickingrouteid,REQUESTEDSHIPDATE,
-				consigneekey,susr1 as inventlocationid, '5' as status,boxnum,@n + 1 as recid
-			from	#result
-        		
-			if @@ROWCOUNT <> 0
-			begin
-			select	identity(int,1,1) as id,
-					'SZ' as dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],susr1 as inventlocationid,lottable06,
-					lottable02,lottable05,lottable04,
-					 '5' as status
-				into	#e
-				from	#result
+			------if @@ROWCOUNT <> 0
+			------begin
+			------select	identity(int,1,1) as id,
+			------		'SZ' as dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],susr1 as inventlocationid,lottable06,
+			------		lottable02,lottable05,lottable04,susr2,
+			------		 '26' as status
+			------	into	#e
+			------	from	#result
         			
-				select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-				from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			------	select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+			------	from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT]
         		
         		
-				insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
-				(dataareaid,docid,salesidbase,itemid,salesqty,orderedqty,inventlocationid,inventbatchid,
-				inventserialid,inventexpiredate,inventserialproddate,
-				status,recid)
+			------	insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT]
+			------	(dataareaid,docid,itemid,[ORDEREDQTYDAX],[PICKEDQTYINFOR],inventlocationid,
+			------	inventserialid,inventexpiredate,status, daxstatus,WMSPickingRouteId,recid)
                 		
-				select	dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],inventlocationid,lottable06,
-					lottable02,lottable05,lottable04,
-					status, @n + e.id as recid
-				from	#e e
+			------	select	dataareaid,externorderkey,sku,[openqty],[packedqty],inventlocationid,
+			------		lottable02,lottable05, status,'5' as daxstatus, susr2,@n + e.id as recid
+			------	from	#e e
 			
         				
-			end		
+			------end		
         		
 			print 'выгружаем результат датадаптеру'
 			if @log=1
@@ -334,12 +346,12 @@ BEGIN
         	
 		print 'выгружаем результат с Ошибкой в DAX'
  
- --select * from  [spb-sql1202]].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking      	
+ --select * from  [SPB-SQL1210DBE\MSSQLDBE]].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking      	
 
 		select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
         	
-		insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
+		insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
 		(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
 		consigneeaccount_ru,inventlocationid,status,recid,error)
         	
@@ -357,10 +369,10 @@ BEGIN
 			from	#result
         		
 			select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
         	
         	
-			insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
 			(dataareaid,docid,salesidbase,itemid,salesqty,orderedqty,inventlocationid,inventbatchid,
 			inventserialid,inventexpiredate,inventserialproddate,
 			status,recid,error)
@@ -398,6 +410,4 @@ IF OBJECT_ID('tempdb..#casedist') IS NOT NULL DROP TABLE #casedist
 ----
 ----
 ----
-
-
 

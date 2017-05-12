@@ -1,5 +1,4 @@
-
-/*************************************************************************************/
+-- ЗЗ --
 ALTER PROCEDURE [WH2].[proc_DA_PurchaseOrder]
 	@id int
 as  
@@ -16,11 +15,11 @@ declare @sku varchar(15)
 declare @externpokey varchar(20)
 --declare @id int
 declare @pokey varchar (15),
-		@type varchar(10),
+		@type int,
 		@sign int = 0
 
---declare @bs varchar(3) select @bs = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
---declare @bsanalit varchar(3) select @bsanalit = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
+--declare @bs varchar(3) select @bs = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
+--declare @bsanalit varchar(3) select @bsanalit = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
 
 
 set @send_error = 0
@@ -28,7 +27,7 @@ set @msg_errdetails = ''
 set @enter = char(10)+char(13)
 
 BEGIN TRY
-	--while (exists (select id from DA_PO))
+	--while (exists (select top 1 1 from DA_PO))
 		begin
 		
 			select @sign = 1
@@ -41,16 +40,20 @@ BEGIN TRY
 			--order by id desc
 			
 			print ' обновление NULL значений в шапке документа'
-			update #DA_PO 
-			set
-				storerkey = case	when (left(isnull(rtrim(ltrim(storerkey)),''),15)) = 'sz' then '001' 
+			
+			
+				update #DA_PO 
+				set
+				storerkey = case	when (left(isnull(rtrim(ltrim(storerkey)),''),15)) = 'SZ' then '001' 
 									else (left(isnull(rtrim(ltrim(storerkey)),''),15)) 
 							end,
 				externpokey = left(isnull(rtrim(ltrim(externpokey)),''),20),
 				potype = left(isnull(rtrim(ltrim(potype)),''),10),
 				SELLERNAME = left(isnull(rtrim(ltrim(SELLERNAME)),''),15),
 				BUYERADDRESS4 = left(isnull(rtrim(ltrim(BUYERADDRESS4)),''),20),
-				SUSR2 = left(isnull(rtrim(ltrim(SUSR2)),''),30)			
+				SUSR2 = left(isnull(rtrim(ltrim(SUSR2)),''),30)	
+
+				
 				
 			set @msg_errdetails1 =''
 			print ' проверка входных данных шапки'
@@ -61,7 +64,7 @@ BEGIN TRY
 						else ''
 					end,
 				@msg_errdetails1 = @msg_errdetails1 --storerkey in STORER
-					+case when (not exists(select s.* from WH2.storer s where s.storerkey = r.storerkey))
+					+case when (not exists(select s.* from wh2.storer s where s.storerkey = r.storerkey))
 						then 'er#002PO. STORERkey=*'+r.storerkey+'* отсутвует в справочнике STORER.'+@enter
 						else ''
 					end,
@@ -71,8 +74,8 @@ BEGIN TRY
 						else ''
 					end,
 				@msg_errdetails1 = @msg_errdetails1 --sellername in STORER
-					+case when (not exists(select s.* from WH2.storer s where s.storerkey = r.sellername))
-						then 'er#004PO. externpokey=*'+r.externpokey+'*.SellerName=*' + r.sellername + '* отсутвует в справочнике STORER.'+@enter
+					+case when (not exists(select s.* from wh2.storer s where s.storerkey = r.sellername))
+						then 'er#004PO. externpokey=*'+r.externpokey+'*.SellerName=*'+r.sellername+'* отсутвует в справочнике STORER.'+@enter
 						else ''
 					end,
 				@msg_errdetails1 = @msg_errdetails1 --externpokey empty
@@ -91,7 +94,7 @@ BEGIN TRY
 						else ''
 					end
 			from	#DA_PO r
-					left join WH2.PO p
+					left join wh2.PO p
 						on p.EXTERNPOKEY = r.EXTERNPOKEY
 						--and p.POTYPE = r.POTYPE
 						
@@ -110,7 +113,7 @@ BEGIN TRY
 				--			r.selleraddress2 = isnull(s.ADDRESS1,''),
 				--			r.selleraddress3 = isnull(s.ADDRESS2,''),
 				--			r.selleraddress4 = isnull(s.ADDRESS3,'')	
-				--	from #DA_PO r join WH2.storer s on  r.sellername = s.storerkey
+				--	from #DA_PO r join wh2.storer s on  r.sellername = s.storerkey
 					
 				--print ' обновляем наименование и адрес получателя (СевроЗапад)'		
 				--update r set r.buyername = left(isnull(s.company,''),44),
@@ -118,7 +121,7 @@ BEGIN TRY
 				--			r.buyeraddress2 = isnull(s.ADDRESS2,''),
 				--			r.buyeraddress3 = isnull(s.ADDRESS3,''),	
 				--			r.buyeraddress4 = isnull(s.ADDRESS4,'')											
-				--	from #DA_PO r join WH2.storer s on  r.STORERKEY = s.storerkey			
+				--	from #DA_PO r join wh2.storer s on  r.STORERKEY = s.storerkey			
 
 				
 				--if (@msg_errdetails1 = '') 
@@ -128,9 +131,9 @@ BEGIN TRY
 				
 				print ' выбираем externpokey'
 				select @storerkey = storerkey, @externpokey = externpokey, @type = potype from #DA_PO
-				
-				print ' выбираем детали документа'
-				select	dr.* 
+				select * from #DA_PO
+				print ' выбираем детали документа + типа: '
+				select	dr.*
 				into	#DA_PODetail 
 				from	dbo.DA_PODetail dr 
 						join #DA_PO r 
@@ -146,10 +149,24 @@ BEGIN TRY
 					where	d.POType = '0'
 				------------- Если тип документ 0, то серию+даты мы не прогружаем ----------- Шевелев 20.05.2015
 				
+				------------- Если тип документ !0, то копируем lot06 в retailsku без _A%% ----------- Шевелев 14.09.2016
+				print 'вход: коцаем _A'
+				update	s
+					set	s.lot06_A= s.Lottable06,
+						s.Lottable06=	case when (left(right(s.Lottable06, 4),2) ='_A')
+											then LEFT(s.Lottable06,(len(s.Lottable06)-4)) 
+											else s.Lottable06
+										end
+					from	     #DA_PODetail s
+							join #DA_PO d 			on d.ExternPOkey = s.ExternPOkey
+					--where	d.POType != '0' --and left(right(s.Lottable06, 4),2) ='_A'
+				print 'выход: коцаем _A'
+				------------- Если тип документ !0, то копируем lot06 в retailsku без _A%% ----------- Шевелев 14.09.2016
+				
 				print ' обновление NULL значений в деталях документа'
 				update #DA_PODetail 
 				set
-					storerkey = case when (left(isnull(rtrim(ltrim(storerkey)),''),15)) = 'sz' then '001' else (left(isnull(rtrim(ltrim(storerkey)),''),15)) end,
+					storerkey = case when (left(isnull(rtrim(ltrim(storerkey)),''),15)) = 'SZ' then '001' else (left(isnull(rtrim(ltrim(storerkey)),''),15)) end,
 					externpokey = left(isnull(rtrim(ltrim(externpokey)),''),20),								
 					sku = left(isnull(rtrim(ltrim(sku)),''),50),
 					externlinenumber = cast(cast(left(isnull(rtrim(ltrim(externlinenumber)),'0'),5) as numeric) as int),
@@ -158,12 +175,11 @@ BEGIN TRY
 								    replace(replace(replace(QTYORDERED,',','.'),' ',''),CHAR(160),'')
 								    ,''),0),
 					LOTTABLE06 = left(isnull(rtrim(ltrim(LOTTABLE06)),''),40),
-					LOTTABLE02 = left(isnull(rtrim(ltrim(LOTTABLE02)),''),40)--,
-					--LOTTABLE05 = case when ISNULL(LOTTABLE05,GETUTCDATE()) <= cast('1900-01-01' as DATETIME) then null
-					--		    else ISNULL(LOTTABLE05,GETUTCDATE()) end,
-					--LOTTABLE04 = case when ISNULL(LOTTABLE04,GETUTCDATE()) <= cast('1900-01-01' as DATETIME) then null
-					--		    else ISNULL(LOTTABLE04,GETUTCDATE()) end
-					----packkey = case when (isnull(packkey,'') = '') then (select top(1) s.packkey from WH2.SKU s where s.SKU= sku and s.STORERKEY = STORERKEY) else ltrim(rtrim(packkey)) end,
+					LOTTABLE02 = left(isnull(rtrim(ltrim(LOTTABLE02)),''),40)
+					
+					
+
+					
 					
 					
 					
@@ -190,22 +206,22 @@ BEGIN TRY
 								end,
 							@msg_errdetails1 = @msg_errdetails1 --storer null
 								+case when rd.storerkey = ''
-									then 'er#011PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. STORER = *null*.'+@enter
+									then 'er#011PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. STORER=*null*.'+@enter
 									else ''
 								end,
 							@msg_errdetails1 = @msg_errdetails1 --storer in STORER
-								+case when (not exists(select s.* from WH2.storer s where s.storerkey = rd.storerkey))
+								+case when (not exists(select s.* from wh2.storer s where s.storerkey = rd.storerkey))
 									then 'er#012PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. STORER отсутвует в справочнике STORER.'+@enter
 									else ''
 								end,
 							@msg_errdetails1 = @msg_errdetails1 --sku null
 								+case when rd.sku = ''
-									then 'er#013PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. SKU = *null*.'+@enter
+									then 'er#013PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. SKU=*null*.'+@enter
 									else ''
 								end,
 							@msg_errdetails1 = @msg_errdetails1 --sku in SKU
-								+case when (not exists(select s.* from WH2.sku s where s.storerkey = rd.storerkey and s.SKU = rd.sku))
-									then 'er#014PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. SKU=*' + rd.sku + '* отсутвует в справочнике SKU.'+@enter
+								+case when (not exists(select s.* from wh2.sku s where s.storerkey = rd.storerkey and s.SKU = rd.sku))
+									then 'er#014PO. EXTERNPOkey=*'+rd.externpokey+'*, EXTERNLINENO=*'+rd.externlinenumber+'*. SKU=*'+rd.sku+'* отсутвует в справочнике SKU.'+@enter
 									else ''
 								end,
 							
@@ -242,10 +258,10 @@ BEGIN TRY
 				if @msg_errdetails = '' 
 					begin						
 						print ' получаем новый номер документа'
-						exec dbo.DA_GetNewKey 'WH2','po',@pokey output
+						exec dbo.DA_GetNewKey 'wh2','po',@pokey output
 
 						print ' вставляем шапку документа'
-						insert into WH2.po
+						insert into wh2.po
 							(whseid,pokey,storerkey,externpokey, potype, --podate, EFFECTIVEDATE,  
 							status, addwho, sellername, 
 							--BUYERNAME, 
@@ -256,7 +272,7 @@ BEGIN TRY
 							SUSR2)
 						
 						
-						select	'WH2' as whseid,@pokey,
+						select	'wh2' as whseid,@pokey,
 								r.storerkey,r.externpokey,r.potype, --r.expecteddate, r.departuredate,
 								'0','dkadapter', r.sellername, 
 								isnull(ss.ADDRESS1,''),isnull(ss.ADDRESS2,''),isnull(ss.ADDRESS3,''),isnull(ss.ADDRESS4,''),
@@ -266,12 +282,12 @@ BEGIN TRY
 								 --r.VESSEL, r.DEPARTUREDATE, 
 								 r.SUSR2
 						from	#DA_PO r								
-								left join WH2.storer ss 
+								left join wh2.storer ss 
 									on ss.STORERKEY = r.sellername
 									
 						if @@rowcount = 0
 					    begin
-						    set @msg_errdetails = @msg_errdetails+'er#017PO.externpokey=*'+@externpokey+'*. Неудалось выполнить вставку записи (шапка документа).'+char(10)+char(13)
+						  set @msg_errdetails = @msg_errdetails+'er#017PO.externpokey=*'+@externpokey+'*. Неудалось выполнить вставку записи (шапка документа).'+char(10)+char(13)
 						    set @send_error = 1
 					    end
 					    else
@@ -282,25 +298,25 @@ BEGIN TRY
 							
 							
 							print ' вставляем строки документа'
-							insert into WH2.poDetail
+							insert into wh2.poDetail
 								(	whseid,pokey,polinenumber,externpokey,externlineno,storerkey,     
 									sku,qtyordered,packkey,UOM,--status,unitprice,unit_cost,
-									LOTTABLE01,LOTTABLE02,LOTTABLE04,LOTTABLE05,LOTTABLE06,
+									LOTTABLE01,LOTTABLE02,LOTTABLE04,LOTTABLE05,LOTTABLE06, RETAILSKU,
 									skudescription,ADDWHO,ADDDATE,EDITDATE,EDITWHO								
 								)
-							select 'WH2' whseid, @pokey,
+							select 'wh2' whseid, @pokey,
 									REPLICATE('0',5 - LEN(drd.externlinenumber)) + CAST(drd.externlinenumber as varchar(10)) as polinenumber,
 									drd.externpokey,
 									REPLICATE('0',5 - LEN(drd.externlinenumber)) + CAST(drd.externlinenumber as varchar(10)) as externlinenumber,
 									drd.storerkey, 
 									drd.sku, drd.QTYORDERED,s.packkey, s.rfdefaultuom,--s.rfdefaultpack,
 									--'0', drd.unitprice, drd.unit_cost,
-									drd.LOTTABLE01,drd.LOTTABLE02,drd.LOTTABLE04,drd.LOTTABLE05,drd.LOTTABLE06,
+									drd.LOTTABLE01,drd.LOTTABLE02,drd.LOTTABLE04,drd.LOTTABLE05,drd.LOTTABLE06, drd.lot06_A,
 									left(s.descr,60) as skudescription,'dkadapter' as addwho,GETUTCDATE(),GETUTCDATE(),'dkadapter'
 							from	#DA_PODetail drd 
 									join #DA_PO drh 
 										on drd.externpokey = drh.externpokey
-									join WH2.sku s 
+									join wh2.sku s 
 										on s.sku = drd.sku 
 										and s.storerkey = drd.storerkey
 										
@@ -334,7 +350,7 @@ BEGIN TRY
 				
 			
 			
-		end
+		end --(while)
 --			
 END TRY
 
@@ -358,95 +374,183 @@ begin
 	if @send_error = 1
 	begin
 		print 'Ставим документ в обменной таблице DAX в ошибку'
-		
+		select @type = potype from #DA_PO
 		set @msg_errdetails=left(@msg_errdetails,200)
 		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-					and d.potype = s.doctype
-		where	s.status = '5'
-		
-	--*************************************************************************
+		if (@type not in (4,5))
+			begin
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
 
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PO_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey
-					and d.potype = s.potype
-		where	s.status = '5'		
-		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PODetail_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey				
-		where	s.status = '5'	
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'		
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
 
 
-		print 'отправляем сообщение об ошибке по почте'
-		print @msg_errdetails
+				print 'отправляем сообщение об ошибке по почте'
+				print @msg_errdetails
+			end	
+		else
+			begin
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+			--*************************************************************************
+
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'		
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+
+
+				print 'отправляем сообщение об ошибке по почте'
+				print @msg_errdetails
+			end
 		--raiserror (@msg_errdetails, 16, 1)
 		
 		--insert into DA_InboundErrorsLog (source,msg_errdetails) values (@source,@msg_errdetails)		
-		--exec app_DA_SendMail 'Приёмка', @msg_errdetails
+		--exec app_DA_SendMail @source, @msg_errdetails
 	end
 	else
 	begin
+		
+		if (@type not in (4,5))
+			begin
+				print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН !4,5'  
+				
+				update	s
+				set		status = '10'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
 
-		print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН'
-		
-		update	s
-		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-					and d.potype = s.doctype
-		where	s.status = '5'
-		
-	--*************************************************************************
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							--and d.potype = s.potype
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+			end
+		else
+			begin
+				print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН =4,5:' 
+				
+				update	s
+				set		status = '27'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '27'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							--and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
 
-		update	s
-		set		status = '10',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PO_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey
-					and d.potype = s.potype
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '10',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PODetail_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey				
-		where	s.status = '5'	
-
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+			end
+			
 
 	end
 
@@ -458,9 +562,4 @@ end
 
 IF OBJECT_ID('tempdb..#DA_PO') IS NOT NULL DROP TABLE #DA_PO
 IF OBJECT_ID('tempdb..#DA_PODetail') IS NOT NULL DROP TABLE #DA_PODetail
-
-
-
-
-
 

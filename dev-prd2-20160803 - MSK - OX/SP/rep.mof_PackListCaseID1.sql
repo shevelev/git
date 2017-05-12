@@ -102,3 +102,4 @@ where pd.status in ('5','6', '7' ,'8') and
 (pd.orderkey like case when @order != '' then @order else '%' end
 and pd.caseid like case when @caseid != '' then @caseid else '%' end)
 group by s.descr, pd.sku, st.company, pd.ORDERKEY,pd.caseid, p.casecnt, o.CONSIGNEEKEY, stc.company, o.route, o.externorderkey, o.door,  la.LOTTABLE02
+

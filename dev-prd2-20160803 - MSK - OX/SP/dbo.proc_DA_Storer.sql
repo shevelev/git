@@ -1,4 +1,3 @@
-
 -- яопюбнвмхй йнмрпюцемрнб --
 
 ALTER PROCEDURE [dbo].[proc_DA_Storer]
@@ -267,5 +266,4 @@ begin
 end
 
 IF OBJECT_ID('tempdb..#DA_Storer') IS NOT NULL DROP TABLE #DA_Storer
-
 

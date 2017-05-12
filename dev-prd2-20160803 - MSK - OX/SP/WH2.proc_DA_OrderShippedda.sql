@@ -1,17 +1,13 @@
-
-/*********************************************************************************************************************************/
-
-
 -- ПОДТВЕРЖДЕНИЕ ОТГРУЗКИ ЗАКАЗА
 
-ALTER PROCEDURE [WH2].[proc_DA_OrderShippedda](
+ALTER PROCEDURE [wh2].[proc_DA_OrderShippedda](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
 )AS
 
 SET NOCOUNT ON
 --
---if @wh <> 'WH2'
+--if @wh <> 'wh2'
 --begin
 --	raiserror('Недопустимая схема %s',16,1,@wh)
 --	return
@@ -22,12 +18,12 @@ declare	@orderkey varchar (10) -- номер заказа
 --declare	@transmitlogkey varchar (10)
 --set @transmitlogkey = '0005364737'
 
-declare @bs varchar(3) select @bs = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
-declare @bsanalit varchar(3) select @bsanalit = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
+declare @bs varchar(3) select @bs = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
+declare @bsanalit varchar(3) select @bsanalit = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
 declare @send_error bit
 declare @msg_errdetails varchar(max)
 declare @source varchar(500) = null,
-	@n int
+	@n bigint
 
 CREATE TABLE #result (	
 	[orderkey] varchar(32),
@@ -53,9 +49,9 @@ CREATE TABLE #result (
 
 print '0. проверка повторного закрытия заказа'
 
-select @orderkey = tl.key1 from WH2.transmitlog tl where tl.transmitlogkey = @transmitlogkey
+select @orderkey = tl.key1 from wh2.transmitlog tl where tl.transmitlogkey = @transmitlogkey
 
---if 0 < (select count(*) from WH2.orders r where r.orderkey=@orderkey and r.susr2='9')
+--if 0 < (select count(*) from wh2.orders r where r.orderkey=@orderkey and r.susr2='9')
 --begin
 --	--raiserror ('Повторное закрытие Заказа = %s',16,1, @orderkey)
 --	set @send_error = 1
@@ -64,13 +60,13 @@ select @orderkey = tl.key1 from WH2.transmitlog tl where tl.transmitlogkey = @tr
 --end	
 
 
-if exists(select * from WH2.ORDERS where [TYPE] = '26' and ORDERKEY = @orderkey)
+if exists(select * from wh2.ORDERS where [TYPE] = '26' and ORDERKEY = @orderkey)
 goto endproc --отмененный заказ
 
 --выбираем строки неотправленных отборов 
 select	serialkey,orderkey,sku,status,pdudf2,pickdetailkey,orderlinenumber,qty,dropid 
 into	#tmp
-from	WH2.pickdetail 
+from	wh2.pickdetail 
 where	orderkey = @orderkey 
 	and status >= '8'--in ('1','5','6','8','9')
 
@@ -97,91 +93,91 @@ begin
 		o.C_CONTACT1,
 		o.CONSIGNEEKEY,
 		o.REQUESTEDSHIPDATE,
-		--o.susr4,
 		od.sku,
 		od.packkey,
-		----case when od.LOTTABLE02 = @bs then @bsanalit else od.LOTTABLE02 end,
-		--case when od.LOTTABLE02 = '' then @bsanalit else od.LOTTABLE02 end,
-		--convert(varchar(20),od.LOTTABLE04,120),
-		--convert(varchar(20),od.LOTTABLE05,120),
-		od.openqty as [openqty],
+		--od.openqty as [openqty],
+		od.originalqty as [openqty],  -- заменил на originalqty
 		case when od.QTYPICKED = 0 then od.SHIPPEDQTY else od.QTYPICKED end as [shipqty],
+		--od.LOTTABLE02, 
 		case when od.LOTTABLE02 = '' then 'бс' else      od.LOTTABLE02      end AS LOTTABLE02, --od.LOTTABLE02, 
 		convert(varchar(12),ISNULL(od.lottable04,'19000101'),112) as LOTTABLE04, --od.LOTTABLE04, 
 		convert(varchar(12),ISNULL(od.lottable05,'19000101'),112) as LOTTABLE05, --od.LOTTABLE05, 
-		od.NOTES
-		--od.openqty+od.SHIPPEDQTY,
-		--od.SHIPPEDQTY--, 
-		--convert(varchar(20),o.editdate,120)
-	from	WH2.orders o 
-		join WH2.orderdetail od 
+		od.NOTES ----LOTTABLE06 Шевелев С.С. 19.11.2015 Партия A od.LOTTABLE06
+	from	wh2.orders o 
+		join wh2.orderdetail od 
 		    on o.orderkey = od.orderkey
 	where	o.orderkey = @orderkey
 	
-	--update WH2.orders 
-	--set SUSR2 = '9' 
-	--where ORDERKEY = @orderkey	
+	print 'выгружаем результат в DAX'	
 	
-	print 'выгружаем результат в DAX'		
-
-	select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-	from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip	
-	
-	insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip
-	(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
-	consigneeaccount_ru,inventlocationid,status,recid)
-	
-	select	distinct 'SZ',externorderkey,[type],susr3 as invoiceid,c_contact1 as salesidbase,susr2 as wmspickingrouteid,REQUESTEDSHIPDATE,
-		consigneekey,susr1 as inventlocationid, '5' as status,@n + 1 as recid
-	from	#result
-	
-	if @@ROWCOUNT <> 0
-	begin
-		select	identity(int,1,1) as id,
-			'SZ' as dataareaid,externorderkey,c_contact1,sku,[openqty],shippedqty,susr1 as inventlocationid,lottable06,
-			lottable02,lottable05,lottable04,
-			 '5' as status
-		into	#e
-		from	#result
-	
-		select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
-	
-	
-		insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
-		(dataareaid,docid,salesidbase,itemid,salesqty,lineqty,orderedqty,inventlocationid,inventbatchid,
-		inventserialid,inventexpiredate,inventserialproddate,
-		status,recid)
-    		
-		select	dataareaid,externorderkey,c_contact1,sku,shippedqty,shippedqty,[openqty],inventlocationid,lottable06,
-			lottable02,lottable05,lottable04,
-			status, @n + id as recid
-		from	#e
+	---- Проверка статуса документа в обменных таблицах.
+	if ((select distinct d.status from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] d
+		join  #result r on d.docid	= r.externorderkey) = '10')
+			-->------ Генерируем комплектацию+отгрузку
+			begin
+				-- Шапка
+				update daxTable
+						set	daxTable.status = '28'
+					from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] daxTable
+					join #result r on 
+						daxTable.docid	= r.externorderkey	-- Внешний номер
+				
+				if @@ROWCOUNT <> 0
+				begin
+				-- Детали			
+					update dax
+							set dax.shippedqtyinfor = r.shippedqty,
+								dax.pickedqtyinfor  = r.shippedqty,
+								dax.status = '28'
+						from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT] dax
+						join #result r on 
+							dax.docid	= r.externorderkey and	-- Внешний номер
+							dax.itemid	= r.sku and				-- Товар
+							dax.inventserialid = r.LOTTABLE02 and	-- Серия
+							dax.INVENTEXPIREDATE = convert(varchar(12),ISNULL(r.lottable05,'19000101'),112) and
+							dax.inventlocationid = r.susr1 --and	-- Склад
+							--dax.ORDEREDQTYDAX = r.openqty		-- заказанное кол-во
+							
+					where r.orderkey = @orderkey	
+				end
+			end
+			-->------
+	else if ((select distinct d.status from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] d
+		join  #result r on d.docid	= r.externorderkey) = '26')
+			-->------ Генерируем отгрузку
+			begin
+				-- Шапка
+				update daxTable
+						set	daxTable.status = '28'
+					from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] daxTable
+					join #result r on 
+						daxTable.docid	= r.externorderkey	-- Внешний номер
+				
+				if @@ROWCOUNT <> 0
+				begin
+				-- Детали			
+					update dax
+							set dax.shippedqtyinfor = r.shippedqty,
+								dax.status = '28'
+						from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT] dax
+						join #result r on 
+							dax.docid	= r.externorderkey and	-- Внешний номер
+							dax.itemid	= r.sku and				-- Товар
+							dax.inventserialid = r.LOTTABLE02 and	-- Серия
+							dax.INVENTEXPIREDATE = convert(varchar(12),ISNULL(r.lottable05,'19000101'),112) and
+							dax.inventlocationid = r.susr1 --and	-- Склад
+							--dax.ORDEREDQTYDAX = r.openqty		-- заказанное кол-во
+							
+					where r.orderkey = @orderkey	
+				end
+			end
+			-->------
 			
-	end			
 
 end
 
 
-select  'ORDERSHIPPED' filetype,
-	*
-	--orderkey,
-	--storerkey,--
-	--externorderkey,
-	--type,--
-	--susr1,--
-	--susr2,
-	--susr3,--
-	--susr4,--
-	--sku,--
-	--packkey,--
-	--attribute02,--
-	--case when attribute04 = '1900-01-01 00:00:00.0' then '' else attribute04 end attribute04,--
-	--case when attribute05 = '1900-01-01 00:00:00.0' then '' else attribute05 end attribute05,--
-	--openqty, --
-	--shippedqty, --
-	--shipdate
-from	#result
+select  'ORDERSHIPPED' filetype, * from	#result
 
 print 'возвращаем результат датаадаптеру'
 
@@ -194,10 +190,10 @@ print 'формируем сообщение об отгрузке машины'
 declare @loadid varchar(20)
 
 select	@loadid = isnull(ls.LOADID,'')
-from	WH2.LOADORDERDETAIL lod 
-	join WH2.ORDERS o 
+from	wh2.LOADORDERDETAIL lod 
+	join wh2.ORDERS o 
 	    on lod.SHIPMENTORDERID = o.ORDERKEY 
-	join WH2.LOADSTOP ls 
+	join wh2.LOADSTOP ls 
 	    on ls.LOADSTOPID = lod.LOADSTOPID
 where o.ORDERKEY = @orderkey
 	
@@ -207,20 +203,20 @@ if @loadid != ''
 begin
     print 'заказ находится в загрузке'
     if (select	COUNT(o.serialkey) 
-        from	WH2.ORDERS o 
-		join WH2.loadorderdetail lod 
+        from	wh2.ORDERS o 
+		join wh2.loadorderdetail lod 
 		    on lod.SHIPMENTORDERID = o.ORDERKEY 
-		join WH2.LOADSTOP ls 
+		join wh2.LOADSTOP ls 
 		    on ls.LOADSTOPID = lod.LOADSTOPID 
         where	isnull(o.susr2,'0') != '9' and ls.LOADID = @loadid
 	) = 0
     begin
 	    --получить номер для записи в лог
-	    exec dbo.DA_GetNewKey 'WH2','eventlogkey',@transmitlogkey output
+	    exec dbo.DA_GetNewKey 'wh2','eventlogkey',@transmitlogkey output
     	
 	    --записать в лог событие об отгрузке заказа
-	    insert WH2.transmitlog (whseid, transmitlogkey, tablename, key1,ADDWHO) 
-	    values ('WH2', @transmitlogkey, 'tsshipped', @loadid, 'dataadapter')
+	    insert wh2.transmitlog (whseid, transmitlogkey, tablename, key1,ADDWHO) 
+	    values ('wh2', @transmitlogkey, 'tsshipped', @loadid, 'dataadapter')
     end
 end
 
@@ -241,9 +237,9 @@ begin
 	
 
 	select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-	from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip	
+	from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip	
 	
-	insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip
+	insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip
 	(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
 	consigneeaccount_ru,inventlocationid,status,recid,error)
 	
@@ -253,7 +249,7 @@ begin
 	
 	if @@ROWCOUNT <> 0
 	begin
-		select	identity(int,1,1) as id,
+			select	identity(int,1,1) as id,
 			'SZ' as dataareaid,externorderkey,c_contact1,sku,[openqty],shippedqty,susr1 as inventlocationid,lottable06,
 			lottable02,lottable05,lottable04,
 			 '5' as status
@@ -261,10 +257,10 @@ begin
 		from	#result
 	
 		select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
 	
 	
-		insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
+		insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
 		(dataareaid,docid,salesidbase,itemid,salesqty,lineqty,orderedqty,inventlocationid,inventbatchid,
 		inventserialid,inventexpiredate,inventserialproddate,
 		status,recid,error)
@@ -294,6 +290,4 @@ IF OBJECT_ID('tempdb..#result') IS NOT NULL DROP TABLE #result
 --
 --
 --
-
-
 

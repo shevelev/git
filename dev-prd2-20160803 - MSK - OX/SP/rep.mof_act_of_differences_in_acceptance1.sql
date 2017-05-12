@@ -57,3 +57,4 @@ ALTER PROCEDURE [rep].[mof_act_of_differences_in_acceptance1] (
 	
 --select * from wh40.receiptdetail where receiptkey = '0000000531'
 
+

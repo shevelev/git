@@ -1,5 +1,3 @@
-
-
 -- Œ“Ã≈Õ¿ Œ“√–”« » «¿ ¿«¿
 
 ALTER PROCEDURE [WH1].[proc_DA_OrderShipped](
@@ -82,6 +80,4 @@ select 'RETURNSHIPMENTORDER' filetype, STORERKEY, ORDERKEY,EXTERNORDERKEY from w
 ----
 ----
 ----
-
-
 

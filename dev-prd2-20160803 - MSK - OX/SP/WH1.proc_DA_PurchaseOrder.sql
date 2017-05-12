@@ -1,4 +1,3 @@
-
 -- ЗЗ --
 ALTER PROCEDURE [WH1].[proc_DA_PurchaseOrder]
 	@id int
@@ -16,7 +15,7 @@ declare @sku varchar(15)
 declare @externpokey varchar(20)
 --declare @id int
 declare @pokey varchar (15),
-		@type varchar(10),
+		@type int,
 		@sign int = 0
 
 --declare @bs varchar(3) select @bs = short from wh1.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
@@ -132,9 +131,9 @@ BEGIN TRY
 				
 				print ' выбираем externpokey'
 				select @storerkey = storerkey, @externpokey = externpokey, @type = potype from #DA_PO
-				
-				print ' выбираем детали документа'
-				select	dr.*, '1234567890123456789012345678901234567890' lot06_A
+				select * from #DA_PO
+				print ' выбираем детали документа + типа: '
+				select	dr.*
 				into	#DA_PODetail 
 				from	dbo.DA_PODetail dr 
 						join #DA_PO r 
@@ -160,7 +159,7 @@ BEGIN TRY
 										end
 					from	     #DA_PODetail s
 							join #DA_PO d 			on d.ExternPOkey = s.ExternPOkey
-					where	d.POType != '0' --and left(right(s.Lottable06, 4),2) ='_A'
+					--where	d.POType != '0' --and left(right(s.Lottable06, 4),2) ='_A'
 				print 'выход: коцаем _A'
 				------------- Если тип документ !0, то копируем lot06 в retailsku без _A%% ----------- Шевелев 14.09.2016
 				
@@ -375,95 +374,183 @@ begin
 	if @send_error = 1
 	begin
 		print 'Ставим документ в обменной таблице DAX в ошибку'
-		
+		select @type = potype from #DA_PO
 		set @msg_errdetails=left(@msg_errdetails,200)
-		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-					and d.potype = s.doctype
-		where	s.status = '5'
-		
-	--*************************************************************************
 
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PO_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey
-					and d.potype = s.potype
-		where	s.status = '5'		
-		
-		update	s
-		set		status = '15',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PODetail_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey				
-		where	s.status = '5'	
+		if (@type not in (4,5))
+			begin
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
+
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'		
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
 
 
-		print 'отправляем сообщение об ошибке по почте'
-		print @msg_errdetails
+				print 'отправляем сообщение об ошибке по почте'
+				print @msg_errdetails
+			end	
+		else
+			begin
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+			--*************************************************************************
+
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'		
+				
+				update	s
+				set		status = '15',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+
+
+				print 'отправляем сообщение об ошибке по почте'
+				print @msg_errdetails
+			end
 		--raiserror (@msg_errdetails, 16, 1)
 		
 		--insert into DA_InboundErrorsLog (source,msg_errdetails) values (@source,@msg_errdetails)		
-		--exec app_DA_SendMail @source, @msg_errdetails
+		exec app_DA_SendMail 'Приемка', @msg_errdetails
 	end
 	else
 	begin
+		
+		if (@type not in (4,5))
+			begin
+				print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН !4,5'  
+				
+				update	s
+				set		status = '10'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
 
-		print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН'
-		
-		update	s
-		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
-				join #DA_PO d
-					on d.ExternPOkey = s.DocId
-					and d.potype = s.doctype
-		where	s.status = '5'
-		
-	--*************************************************************************
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							--and d.potype = s.potype
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+			end
+		else
+			begin
+				print 'Ставим статус документа в обменной таблице DAX в ОБРАБОТАН =4,5:' 
+				
+				update	s
+				set		status = '27'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '27'
+				from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_RECEIVED] s
+						join #DA_PO d
+							on d.ExternPOkey = s.DocId
+							--and d.potype = s.doctype
+				where	s.status = '5'
+				
+			--*************************************************************************
 
-		update	s
-		set		status = '10',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PO_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey
-					and d.potype = s.potype
-		where	s.status = '5'
-		
-		
-		update	s
-		set		status = '10',
-				error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_PODetail_archive s
-				join #DA_PO d
-					on d.ExternPOkey = s.ExternPOkey				
-		where	s.status = '5'	
-
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PO_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey
+							and d.potype = s.potype
+				where	s.status = '5'
+				
+				
+				update	s
+				set		status = '10',
+						error = @msg_errdetails
+				from	[SQL-WMS].[PRD2].[dbo].DA_PODetail_archive s
+						join #DA_PO d
+							on d.ExternPOkey = s.ExternPOkey				
+				where	s.status = '5'	
+			end
+			
 
 	end
 
@@ -475,5 +562,4 @@ end
 
 IF OBJECT_ID('tempdb..#DA_PO') IS NOT NULL DROP TABLE #DA_PO
 IF OBJECT_ID('tempdb..#DA_PODetail') IS NOT NULL DROP TABLE #DA_PODetail
-
 

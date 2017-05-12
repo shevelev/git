@@ -1,7 +1,3 @@
-
-
-
-
 ALTER PROCEDURE [WH1].[proc_DA_Transferfinalized](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
@@ -98,9 +94,9 @@ select
 			join wh1.transferdetail td on tl.key1 = td.transferkey
 			join wh1.lotattribute lt on lt.lot = td.fromlot
 			join wh1.loc l1 on l1.LOC=td.fromloc --склад откуда
-			join WHTOZONE zone1 on zone1.zone=l1.PUTAWAYZONE
+			join dbo.WHTOZONE zone1 on zone1.zone=l1.PUTAWAYZONE
 			join wh1.loc l2 on l2.LOC=td.toloc --склад куда
-			join WHTOZONE zone2 on zone2.zone=l2.PUTAWAYZONE
+			join dbo.WHTOZONE zone2 on zone2.zone=l2.PUTAWAYZONE
 		where tl.tablename = 'transferfinalized' and tl.transmitlogkey = @transmitlogkey
 
 
@@ -169,10 +165,10 @@ declare @n bigint
 
 
 select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 
 
-insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 (DataAReaID, inventjournalnameid, transdate, inventjournalid, inventjournaltype,
  mastersystem,Status,RecID)
 
@@ -191,13 +187,13 @@ if @@ERROR = 0
 begin	    
 	    
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
 
 
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
     (DataAReaID, inventjournalid, transdate,ItemID, manufacturedatefrom,manufacturedateto,inventexpiredate,corrinventexpiredate,
     OrderedQty,inventlocationid,corrinventlocationid,
-    InventBatchID,corrinventbatchid,InventSerialID,corrinventserialid,mastersystem,Status,RecID)
+    /*InventBatchID,corrinventbatchid,*/InventSerialID,corrinventserialid,mastersystem,Status,RecID)
 
     select  dataareaid,
 	   'I'+ cast(@transmitlogkey as varchar(20)) as inventjournalid,
@@ -210,8 +206,8 @@ begin
 	    orderedqty,
 	    inventlocationid,
 	    corrinventlocationid,
-	    inventbatchid,
-	    corrinventbatchid,
+	    --inventbatchid,
+	    --corrinventbatchid,
 	    case when inventserialid='' then 'бс' else inventserialid end,
 	    case when corrinventserialid='' then 'бс' else corrinventserialid end,
 	    mastersystem,
@@ -250,5 +246,4 @@ from	#resultall
 IF OBJECT_ID('tempdb..#resultall') IS NOT NULL DROP TABLE #resultall
 IF OBJECT_ID('tempdb..#resulthead') IS NOT NULL DROP TABLE #resulthead
 IF OBJECT_ID('tempdb..#resultdetail') IS NOT NULL DROP TABLE #resultdetail
-
 

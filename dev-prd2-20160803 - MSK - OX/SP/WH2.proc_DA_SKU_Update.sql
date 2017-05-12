@@ -1,4 +1,3 @@
-
 /**************************************************************************************/
 
 ALTER PROCEDURE [WH2].[proc_DA_SKU_Update]
@@ -55,10 +54,10 @@ where	s.SKU = @sku
 declare @n bigint
 
 select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0) -- проверка на null, иначе не вставлялось.
-from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpItemgrossparameters
+from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpItemgrossparameters
 
     	
-insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpItemgrossparameters
+insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpItemgrossparameters
 (itemid, netweight, unitvolume, grossdepth, grosswidth, grossheight, barcodestring, vital, freightclass, status, error,recid, dataareaid)
 
 select	SKU,STDGROSSWGT,STDCUBE,0,0,0,isnull(ALTSKU,''),'',FREIGHTCLASS,'5' as status,'',@n+id, 'vir'
@@ -69,7 +68,5 @@ from	#e
 select * from #e
 
 
-IF OBJECT_ID('tempdb..#e') IS NOT NULL DROP TABLE #e	
-
-
+IF OBJECT_ID('tempdb..#e') IS NOT NULL DROP TABLE #e
 

@@ -1,6 +1,3 @@
-
-
-
 /******************************************************************************************************/
 
 
@@ -63,7 +60,7 @@ from    WH2.TRANSMITLOG t
 		left join #altsku a
 			on a.STORERKEY = s.STORERKEY
 			and a.SKU = s.SKU
-		join dbo.WHTOZONE w
+		join WH2.WHTOZONE w
 			on w.zone = loc.PUTAWAYZONE
 where   t.TRANSMITLOGKEY = @transmitlogkey
 group by l.SKU,
@@ -86,10 +83,10 @@ drop table #altsku
 
 
 	select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-	from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
+	from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
 
 
-	insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
+	insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventsumFromWMS
 	(DataAReaID, sessionid, date, transdate, Type, itemid,itemname, Inventlocationid,
 	 inventbatchID, inventserialid, expiredate, manufacturedate,inventqtyonhandwms, 
 	 Status,RecID,barcodestring)
@@ -109,5 +106,4 @@ drop table #altsku
     
   
 IF OBJECT_ID('tempdb..#rt') IS NOT NULL DROP TABLE #rt
-
 

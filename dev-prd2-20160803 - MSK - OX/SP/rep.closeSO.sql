@@ -13,7 +13,7 @@ select @st=status from wh1.orders where ORDERKEY=@orderkey
 
 if @st<'92'
 	begin
-		update wh1.orders set STATUS='98' where ORDERKEY=@orderkey -- меняем статус заказа
+		update wh1.orders set STATUS='98', EXTERNORDERKEY='OLD'+EXTERNORDERKEY where ORDERKEY=@orderkey -- меняем статус заказа
 		declare @transmitlogkey varchar(10)
 		exec dbo.DA_GetNewKey 'wh1','eventlogkey',@transmitlogkey output
 		

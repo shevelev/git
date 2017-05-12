@@ -1,4 +1,3 @@
-
 -- ЗЗ под ответхранение--
 ALTER PROCEDURE [WH1].[proc_DA_PurchaseOrder_OX]
 	@id int
@@ -422,7 +421,7 @@ begin
 		update	s
 		set		status = '15',
 				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
 				join #DA_PO d
 					on d.ExternPOkey = s.DocId
 		where	s.status = '5'
@@ -431,7 +430,7 @@ begin
 		update	s
 		set		status = '15',
 				error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
 				join #DA_PO d
 					on d.ExternPOkey = s.DocId
 					and d.potype = s.doctype
@@ -471,7 +470,7 @@ begin
 		
 		update	s
 		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrderLinesToWMS s
 				join #DA_PO d
 					on d.ExternPOkey = s.DocId
 		where	s.status = '5'
@@ -479,7 +478,7 @@ begin
 		
 		update	s
 		set		status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpInputOrdersToWMS s
 				join #DA_PO d
 					on d.ExternPOkey = s.DocId
 					and d.potype = s.doctype
@@ -516,7 +515,4 @@ end
 
 IF OBJECT_ID('tempdb..#DA_PO') IS NOT NULL DROP TABLE #DA_PO
 IF OBJECT_ID('tempdb..#DA_PODetail') IS NOT NULL DROP TABLE #DA_PODetail
-
-
-
 

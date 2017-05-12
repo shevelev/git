@@ -131,3 +131,4 @@ left join ssaadmin.pl_usr UsrFull on tmp.usr=UsrFull.usr_login
 
 drop table #tmpOrders
 
+

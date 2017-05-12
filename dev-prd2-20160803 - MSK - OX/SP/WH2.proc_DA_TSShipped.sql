@@ -1,6 +1,3 @@
-
-
-
 ALTER PROCEDURE [WH2].[proc_DA_TSShipped](
 	@wh varchar(30),
 	@transmitlogkey varchar (10))
@@ -22,5 +19,4 @@ from	WH2.ORDERS o
 	join WH2.LOADHDR l 
 	    on ls.LOADID = l.LOADID
 where	ls.LOADID = @loadid
-
 

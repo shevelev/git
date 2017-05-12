@@ -2,8 +2,7 @@
 ALTER PROCEDURE [rep].[ShippedListMAR4] (
 	@dat1 datetime,
 	@dat2 datetime,
-	@mar varchar(12),
-	@st varchar(10)
+	@mar varchar(12)
 )
 AS
 --declare @dat1 datetime, @dat2 datetime, @mar varchar(12)
@@ -42,8 +41,8 @@ insert into #case
 from	wh1.loadhdr lh
 join wh1.loadstop ls on lh.LOADID=ls.LOADID
 join wh1.LOADORDERDETAIL lod on ls.LOADSTOPID=lod.LOADSTOPID
-join wh1.PICKDETAIL pd on pd.ORDERKEY=lod.SHIPMENTORDERID and pd.STORERKEY=lod.STORER
-where lh.ROUTE=@mar and  lh.DEPARTURETIME between ''+ @date1+'' and ''+@date2+''  and pd.STORERKEY=@st
+join wh1.PICKDETAIL pd on pd.ORDERKEY=lod.SHIPMENTORDERID
+where lh.ROUTE=@mar and  lh.DEPARTURETIME between ''+ @date1+'' and ''+@date2+'' 
 
 -- если есть запись в ITRN то заполн€ем €чейку »«
 print 'если есть запись в ITRN то заполн€ем €чейку »«'
@@ -109,8 +108,8 @@ select c1.caseid,
 sum(ceiling(case when p.casecnt=0 then pd.qty/1 else pd.qty/p.casecnt end)) yashik, pc.boxnum
 into #t3
 from #case1 c1
-join wh1.PICKDETAIL pd on c1.caseid=pd.CASEID and c1.orderkey=pd.ORDERKEY and pd.STORERKEY=@st
-join wh1.LOTATTRIBUTE lot on pd.LOT=lot.lot and lot.STORERKEY=pd.STORERKEY
+join wh1.PICKDETAIL pd on c1.caseid=pd.CASEID and c1.orderkey=pd.ORDERKEY
+join wh1.LOTATTRIBUTE lot on pd.LOT=lot.lot
 join wh1.PACK p on lot.LOTTABLE01=p.packkey
 left join wh1.PICKCONTROL_LABEL pc on pc.CASEID=pd.caseid
 group by c1.caseid, pc.boxnum
@@ -123,11 +122,11 @@ select @ts ts,dbo.getean128(@ts)bcts, c4.orderkey,oss.DESCRIPTION descOrder,o.EX
  ck.DESCRIPTION descCase,pd.dropid, d.droploc, pd.ROUTE, s.COMPANY, s.ADDRESS1, s.address2,
 CASE when isnull(t3.BOXNUM,'')='' then t3.yashik else t3.BOXNUM end as tt, c4.DEPARTURETIME, c4.loadid
  from #case4 c4
-join wh1.pickdetail pd on c4.orderkey=pd.ORDERKEY and pd.STORERKEY=@st
+join wh1.pickdetail pd on c4.orderkey=pd.ORDERKEY
 left join #t3 t3 on t3.CASEID=pd.CASEID
 join wh1.DROPID d on d.DROPID=pd.dropid
 join wh1.CODELKUP ck on pd.STATUS=ck.CODE and LISTNAME='ordrstatus'
-join wh1.ORDERS o on pd.orderkey=o.orderkey and pd.STORERKEY=o.STORERKEY
+join wh1.ORDERS o on pd.orderkey=o.orderkey
 join wh1.ORDERSTATUSSETUP oss on o.STATUS=oss.CODE
 join wh1.storer s on o.CONSIGNEEKEY=s.storerkey
 group by c4.orderkey, oss.DESCRIPTION,o.EXTERNORDERKEY ,pd.caseid, ck.DESCRIPTION,pd.dropid, d.droploc, pd.ROUTE,

@@ -45,3 +45,4 @@ select * from #qwe3
 drop table #qwe1
 drop table #qwe2
 drop table #qwe3
+

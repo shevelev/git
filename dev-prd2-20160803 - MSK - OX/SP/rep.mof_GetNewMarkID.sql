@@ -50,3 +50,4 @@ select dbo.GetEAN128(id), header, id as numb from #ArrayLabel -- вывод результат
 drop table #ArrayLabel
 
 
+

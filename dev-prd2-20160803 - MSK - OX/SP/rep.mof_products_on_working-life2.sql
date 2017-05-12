@@ -83,3 +83,4 @@ order by sku
 
 drop table #table_result
 
+

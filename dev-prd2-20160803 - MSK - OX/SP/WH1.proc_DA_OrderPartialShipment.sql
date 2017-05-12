@@ -1,5 +1,3 @@
-
-
 ALTER PROCEDURE [WH1].[proc_DA_OrderPartialShipment](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)	
@@ -66,7 +64,4 @@ end
 
 --вернуть пустой рекордсет
 select 'PARTIALSHIPMENT' as filetype, * from #result
-
-
-
 

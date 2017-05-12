@@ -40,3 +40,4 @@ select RECEIPTKEY from @tbl
 
 END
 
+

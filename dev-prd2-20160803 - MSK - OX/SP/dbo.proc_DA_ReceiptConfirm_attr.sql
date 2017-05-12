@@ -1,3 +1,4 @@
+
 ALTER PROCEDURE [dbo].[proc_DA_ReceiptConfirm_attr]
 	
 	@receiptkey1 varchar (10)
@@ -49,7 +50,7 @@ from
 					    on rr.POKEY=pd.POKEY
 					    and pd.POTYPE = '0'
 	    where  
-		ltrim(rtrim(r.LOTTABLE02))='' and r.LOTTABLE06>''
+		/*ltrim(rtrim(r.LOTTABLE02))='' and */ r.LOTTABLE06>''  -- Шевелев 15.12.2015 (Генерация партии DAX для разных сроков годности (для разных серий товара))
 
 	    group by r.LOTTABLE06, r.receiptkey, r.sku
 	    having count(distinct r.LOTTABLE04+r.LOTTABLE05)>1) x
@@ -81,3 +82,4 @@ from
 drop table #lot6edit
 --------------------------------------------------------конец 18.09.2015	
 end
+

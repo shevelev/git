@@ -1,9 +1,4 @@
-	
-
-/****************************************************************************************/
-
-
-ALTER PROCEDURE [WH2].[proc_DA_Transferfinalized](
+ALTER PROCEDURE [wh2].[proc_DA_Transferfinalized](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
 	
@@ -95,13 +90,13 @@ select
 	
 		
 		
-		from WH2.transmitlog tl
-			join WH2.transferdetail td on tl.key1 = td.transferkey
-			join WH2.lotattribute lt on lt.lot = td.fromlot
-			join WH2.loc l1 on l1.LOC=td.fromloc --склад откуда
-			join WHTOZONE zone1 on zone1.zone=l1.PUTAWAYZONE
-			join WH2.loc l2 on l2.LOC=td.toloc --склад куда
-			join WHTOZONE zone2 on zone2.zone=l2.PUTAWAYZONE
+		from wh2.transmitlog tl
+			join wh2.transferdetail td on tl.key1 = td.transferkey
+			join wh2.lotattribute lt on lt.lot = td.fromlot
+			join wh2.loc l1 on l1.LOC=td.fromloc --склад откуда
+			join dbo.WHTOZONE zone1 on zone1.zone=l1.PUTAWAYZONE
+			join wh2.loc l2 on l2.LOC=td.toloc --склад куда
+			join dbo.WHTOZONE zone2 on zone2.zone=l2.PUTAWAYZONE
 		where tl.tablename = 'transferfinalized' and tl.transmitlogkey = @transmitlogkey
 
 
@@ -198,7 +193,7 @@ begin
     insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
     (DataAReaID, inventjournalid, transdate,ItemID, manufacturedatefrom,manufacturedateto,inventexpiredate,corrinventexpiredate,
     OrderedQty,inventlocationid,corrinventlocationid,
-    InventBatchID,corrinventbatchid,InventSerialID,corrinventserialid,mastersystem,Status,RecID)
+    /*InventBatchID,corrinventbatchid,*/InventSerialID,corrinventserialid,mastersystem,Status,RecID)
 
     select  dataareaid,
 	   'I'+ cast(@transmitlogkey as varchar(20)) as inventjournalid,
@@ -211,8 +206,8 @@ begin
 	    orderedqty,
 	    inventlocationid,
 	    corrinventlocationid,
-	    inventbatchid,
-	    corrinventbatchid,
+	    --inventbatchid,
+	    --corrinventbatchid,
 	    case when inventserialid='' then 'бс' else inventserialid end,
 	    case when corrinventserialid='' then 'бс' else corrinventserialid end,
 	    mastersystem,
@@ -251,5 +246,4 @@ from	#resultall
 IF OBJECT_ID('tempdb..#resultall') IS NOT NULL DROP TABLE #resultall
 IF OBJECT_ID('tempdb..#resulthead') IS NOT NULL DROP TABLE #resulthead
 IF OBJECT_ID('tempdb..#resultdetail') IS NOT NULL DROP TABLE #resultdetail
-
 

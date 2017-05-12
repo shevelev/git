@@ -39,11 +39,17 @@ ELSE IF @additional_param = 1
 	BEGIN
 		Select 'Отбор завершен'
 		UPDATE WH1.ORDERS
-		SET status = 99
+		SET status = 99, EXTERNORDERKEY='OLD'+EXTERNORDERKEY
 		WHERE ORDERKEY = @orderkey
 		
 	INSERT INTO DA_InboundErrorsLog (source,msg_errdetails) 
 	SELECT 'Orders99', 'Изменили статус заказа: ' + @orderkey
+	
+			
+		--записываем статус в хистори по заказу
+		insert wh1.orderstatushistory (ORDERLINENUMBER,orderkey, whseid, ordertype, status, addwho, adddate ,comments)
+		values ('',@orderkey, 'WH1', 'SO', '98', 'CanselSO', getdate(), 'CancelSO.. report')
+	
 		
 	END
 ELSE 

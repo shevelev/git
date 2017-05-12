@@ -1,4 +1,3 @@
-
 ALTER PROCEDURE [dbo].[proc_DA_Barcode]
 	@source varchar(500) = null
 AS
@@ -125,3 +124,4 @@ print '4. Проверка наличия ШК в базе'
 		select @@rowcount
 	end
 delete from DA_BARCODE
+

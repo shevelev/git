@@ -55,7 +55,7 @@ join wh1.storer sts on sts.storerkey = o.storerkey
 join wh1.codelkup ck on ck.code = p.packuom3 and ck.listname = 'PACKAGE'
 join wh1.loc l on l.loc = pd.loc
 left join wh1.cartonization c on c.cartontype = pd.CARTONTYPE and  c.CARTONIZATIONGROUP=pd.CARTONGROUP
-join wh1.LOTATTRIBUTE lat on pd.LOT=lat.lot and pd.STORERKEY=lat.STORERKEY
+join wh1.LOTATTRIBUTE lat on pd.LOT=lat.lot
 where pd.status in ('5','6', '7' ,'8') and 
 (pd.orderkey like case when @order != '' then @order else '%' end
 and pd.caseid like case when @caseid != '' then @caseid else '%' end)

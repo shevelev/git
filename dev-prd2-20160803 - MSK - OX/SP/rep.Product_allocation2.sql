@@ -8,8 +8,7 @@
 ALTER PROCEDURE [rep].[Product_allocation2] 
 	@wh varchar(10),
 	@datebegin datetime,
-	@dateend datetime,
-	@st varchar(10)
+	@dateend datetime
 AS
 BEGIN
 	SET NOCOUNT ON;
@@ -26,7 +25,7 @@ set dateformat dmy
 declare @tbl table (RECEIPTKEY varchar(15))
 insert into @tbl
 select distinct RECEIPTKEY from WH1.RECEIPT
-where RECEIPTDATE between @bdate and @edate and STORERKEY=@st
+where RECEIPTDATE between @bdate and @edate
 order by RECEIPTKEY desc
 
 select RECEIPTKEY from @tbl

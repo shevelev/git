@@ -10,11 +10,11 @@ AS
 		select top 1 @id = id from	[wh1].SZ_ImpOutputOrderlinespic where status=5
 		
 		select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic	
+			from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic	
 		
 		
-		--insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderLinesPic --	анебни
-		insert into [SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic -- реярнбши
+		insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderLinesPic --	анебни
+		--insert into [SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic -- реярнбши
 				(dataareaid,docid,salesidbase,itemid,salesqty,orderedqty,inventlocationid,inventbatchid,
 				inventserialid,inventexpiredate,inventserialproddate,
 				status,recid)
@@ -29,10 +29,10 @@ AS
 		select top 1 @id2 = id from	[wh1].SZ_ImpOutputOrderlineShip	 where status=5
 		
 		select	@n2 = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
+			from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip
 			
-		--insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip  --	анебни
-		insert into [SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip -- реярнбши
+		insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip  --	анебни
+		--insert into [SPB-DAXDEV].[DAX2009_1].[dbo].SZ_ImpOutputOrderlineShip -- реярнбши
 				(dataareaid,docid,salesidbase,itemid,salesqty,lineqty,orderedqty,inventlocationid,inventbatchid,
 				inventserialid,inventexpiredate,inventserialproddate,
 				status,recid)

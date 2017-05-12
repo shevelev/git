@@ -1,8 +1,6 @@
-
-
 -- ЗО --
-ALTER PROCEDURE [WH1].[proc_DA_ShipmentOrder]
-	@id int
+ALTER PROCEDURE [wh1].[proc_DA_ShipmentOrder]
+		@id int
 as  
 
 --declare @source varchar(500)
@@ -54,7 +52,7 @@ BEGIN TRY
 			set @sign = 1
 			
 			print ' выбираем запись из обменной таблицы DA_ShipmentOrderHead'
-			select * into #DA_ShipmentOrderHead from DA_ShipmentOrderHead where id=@id --order by id desc
+			select * into #DA_ShipmentOrderHead from DA_ShipmentOrderHead where id=@id--order by id desc
 			
 			print ' обновление NULL значений'
 			update #DA_ShipmentOrderHead set
@@ -100,11 +98,11 @@ BEGIN TRY
 						then 'er#003ORDER. ВнешнийНомер=*'+o.externorderkey+'*. Владелец=*'+o.storerkey+'* отсутвует в справочнике STORER.'+@enter
 						else ''
 					end,
-				@msg_errdetails1 = @msg_errdetails1 --c_contact1 EMPTY
-					+case when o.c_contact1 = ''
-						then 'er#004ORDER. Накладная=*пустая*.'+@enter
-						else ''
-					end,
+				----@msg_errdetails1 = @msg_errdetails1 --c_contact1 EMPTY
+				----	+case when o.c_contact1 = ''
+				----		then 'er#004ORDER. Накладная=*пустая*.'+@enter
+				----		else ''
+				----	end,
 				--@msg_errdetails1 = @msg_errdetails1 --carriercode in STORER
 				--	+case when (not exists(select s.* from wh1.storer s where s.storerkey = o.carriercode))
 				--		then 'ORDER. CARRIERcode='+o.carriercode+' отсутвует в справочнике STORER.'+@enter
@@ -234,16 +232,13 @@ BEGIN TRY
 					lottable04= case when lottable04='19000101' then null else lottable04 end, ---Шевелев 24.03.2015
 					qtyexpected = isnull(nullif(
 							    replace(replace(replace(qtyexpected,',','.'),' ',''),CHAR(160),'')
-							    ,''),0)  
-				
-			
+							    ,''),0)
+
 -------------------------18.11.2015 Шевелев С.С. Обрезание партий, которые имеют префикс _A%% на конце -----------------------------
 					update #DA_ShipmentOrderDetail set
 						lottable06 =LEFT(lottable06,(len(lottable06)-4)) 
 					where left(right(lottable06, 3),1)='A'
 -------------------------18.11.2015 Шевелев С.С. Обрезание партий, которые имеют префикс _A%% на конце -----------------------------
-			
-
 				--select * into ttt from #DA_ShipmentOrderDetail
 
 				print ' выбор идентификаторов строк'
@@ -255,7 +250,7 @@ BEGIN TRY
 				    select @id = id from #id
 				    print ' строкаID='+cast(@id as varchar(10))+'.'
 				    select @msg_errdetails1 = ''
-				     select 
+				    select 
 					    @msg_errdetails1 = @msg_errdetails1 --storerkey
 						    +case when od.storerkey = ''
 							    then 'er#013ORDER. STORERkey=*empty*'+@enter
@@ -355,9 +350,9 @@ BEGIN TRY
 								--else
 								--BEGIN
 									select	@maxid = max(cast(recid as int)) 
-									from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									
-									insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									(dataareaid, docid, doctype, operationtypeheader, invoiceid,
 									salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
 									inventlocationid, --pickoperation, 
@@ -378,14 +373,14 @@ BEGIN TRY
 									--else
 									--BEGIN
 										
-										select	@maxid = max(cast(recid as int)) 
-										from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										--select	@maxid = max(cast(recid as int)) 
+										--from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										
-										insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
-										(dataareaid,salesidbase,docid,itemid,wmsrouteid,
-										operationtypeheader,orderedqty,inventlocationid,
-										inventbatchid,inventserialid,inventexpiredate,
-										inventserialproddate,status,recid)
+										--insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										--(dataareaid,salesidbase,docid,itemid,wmsrouteid,
+										--operationtypeheader,orderedqty,inventlocationid,
+										--inventbatchid,inventserialid,inventexpiredate,
+										--inventserialproddate,status,recid)
 										
 										
 										select	'SZ' as dataareaid, ss.C_CONTACT1 as salesidbase,s.externorderkey as docid,s.sku,ss.susr2 as wmsrouteid,
@@ -442,14 +437,14 @@ BEGIN TRY
 								--else
 								--BEGIN
 									
-									select	@maxid = max(cast(recid as int)) 
-									from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									--select	@maxid = max(cast(recid as int)) 
+									--from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									
-									insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
-									(dataareaid, docid, doctype, operationtypeheader, invoiceid,
-									salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
-									inventlocationid, --pickoperation, 
-									status, recid)
+									--insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									--(dataareaid, docid, doctype, operationtypeheader, invoiceid,
+									--salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
+									--inventlocationid, --pickoperation, 
+									--status, recid)
 									
 									select	'SZ',externorderkey as docid,type,'1' as operationtypeheader,susr3 as invoiceid,
 										C_CONTACT1 as salesidbase, susr2 as wmspickingrouteid,REQUESTEDSHIPDATE as demandshipdate,CONSIGNEEKEY as consigneeAccount_ru,
@@ -466,14 +461,14 @@ BEGIN TRY
 									--else
 									--BEGIN
 										
-										select	@maxid = max(cast(recid as int)) 
-										from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										--select	@maxid = max(cast(recid as int)) 
+										--from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										
-										insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
-										(dataareaid,salesidbase,docid,itemid,wmsrouteid,
-										operationtypeheader,orderedqty,inventlocationid,
-										inventbatchid,inventserialid,inventexpiredate,
-										inventserialproddate,status,recid)
+										--insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										--(dataareaid,salesidbase,docid,itemid,wmsrouteid,
+										--operationtypeheader,orderedqty,inventlocationid,
+										--inventbatchid,inventserialid,inventexpiredate,
+										--inventserialproddate,status,recid)
 										
 										
 										select	'SZ' as dataareaid, ss.C_CONTACT1 as salesidbase,s.externorderkey as docid,s.sku,ss.susr2 as wmsrouteid,
@@ -526,7 +521,7 @@ BEGIN TRY
 							
 					    if @@rowcount = 0 
 					    begin
-						    set @msg_errdetails = @msg_errdetails+'ORDER. EXTERNORDERkey='+@externorderkey+'. Неудалось выполнить вставку записи (шапка документа).'+char(10)+char(13)
+						    set @msg_errdetails = @msg_errdetails+'er#020ORDER. EXTERNORDERkey=*'+@externorderkey+'*. Неудалось выполнить вставку записи (шапка документа).'+char(10)+char(13)
 						    set @send_error = 1
 					    end	
 					    else
@@ -568,7 +563,7 @@ BEGIN TRY
 														
 						    if @@rowcount = 0
 						    begin
-							    set @msg_errdetails = @msg_errdetails+'er#021ORDER. EXTERNORDERkey='+@externorderkey+'. Неудалось выполнить вставку строк документа, либо нет строк.'+char(10)+char(13)
+							    set @msg_errdetails = @msg_errdetails+'er#021ORDER. EXTERNORDERkey=*'+@externorderkey+'*. Неудалось выполнить вставку строк документа, либо нет строк.'+char(10)+char(13)
 							    set @send_error = 1
 						    end	
 						    else 
@@ -582,7 +577,8 @@ BEGIN TRY
 								    @adddate = GETDATE()  
 							    from    #DA_ShipmentOrderHead 
 							    
-							     set @loaddate = convert(datetime,convert(int,@shipdate))
+							    
+							    set @loaddate = convert(datetime,convert(int,@shipdate))
 							    set @dayweek = /*case*/ DATEPART (dw,  @loaddate) 
 										    --when 1 then 7
 										    --when 2 then 1
@@ -632,7 +628,7 @@ BEGIN TRY
 										set @dayweek = /*case*/ DATEPART (dw, @loaddate) 
 												--    when 1 then 7
 												--    when 2 then 1
-												--   when 3 then 2
+												--    when 3 then 2
 												--    when 4 then 3
 												--    when 5 then 4
 												--    when 6 then 5
@@ -640,7 +636,7 @@ BEGIN TRY
 												--end
 									end		
 
-									select  @loaddate = @loaddate +
+									select  @loaddate = @loaddate  +
 										case @dayweek	
 											when 1 then lg.[1]
 											when 2 then lg.[2]
@@ -819,7 +815,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_SHIPMENT] s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.DocId
 		where	s.status = '5'
@@ -828,7 +824,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] s
 			join #DA_ShipmentOrderHead d
 				on d.externorderkey = s.DocId				
 		where	s.status = '5'
@@ -838,7 +834,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_ShipmentOrderHead_archive s
+		from	[SQL-WMS].[PRD2].[dbo].DA_ShipmentOrderHead_archive s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.externorderkey			
 		where	s.status = '5'		
@@ -846,7 +842,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_ShipmentOrderDetail_archive s
+		from	[SQL-WMS].[PRD2].[dbo].DA_ShipmentOrderDetail_archive s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.externorderkey				
 		where	s.status = '5'	
@@ -857,7 +853,7 @@ begin
 		--raiserror (@msg_errdetails, 16, 1)
 		
 		--insert into DA_InboundErrorsLog (source,msg_errdetails) values (@source,@msg_errdetails)		
-		--exec app_DA_SendMail 'Отгрузка', @msg_errdetails
+		exec app_DA_SendMail 'Отгрузка', @msg_errdetails
 	end
 	else
 	begin
@@ -866,7 +862,7 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONline_SHIPMENT] s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.DocId
 		where	s.status = '5'
@@ -874,7 +870,7 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] s
 			join #DA_ShipmentOrderHead d
 				on d.externorderkey = s.DocId				
 		where	s.status = '5'
@@ -883,14 +879,14 @@ begin
 
 		update	s
 		set	status = '10'
-		from	[SQL-dev].[PRD2].[dbo].DA_ShipmentOrderHead_archive s
+		from	[SQL-WMS].[PRD2].[dbo].DA_ShipmentOrderHead_archive s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.externorderkey			
 		where	s.status = '5'		
 		
 		update	s
 		set	status = '10'
-		from	[SQL-dev].[PRD2].[dbo].DA_ShipmentOrderDetail_archive s
+		from	[SQL-WMS].[PRD2].[dbo].DA_ShipmentOrderDetail_archive s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.externorderkey				
 		where	s.status = '5'	
@@ -907,7 +903,6 @@ end
 IF OBJECT_ID('tempdb..#DA_ShipmentOrderHead') IS NOT NULL DROP TABLE #DA_ShipmentOrderHead
 IF OBJECT_ID('tempdb..#DA_ShipmentOrderDetail') IS NOT NULL DROP TABLE #DA_ShipmentOrderDetail
 IF OBJECT_ID('tempdb..#id') IS NOT NULL DROP TABLE #id
-
 
 
 

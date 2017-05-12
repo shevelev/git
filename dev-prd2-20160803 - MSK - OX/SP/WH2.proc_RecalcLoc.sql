@@ -47,4 +47,3 @@ where
 		AND
 	 (sxl.loc=@loc and isnull(@loc,'')<>'')
 
-

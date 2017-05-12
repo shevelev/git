@@ -30,3 +30,4 @@ ORDER BY 1, 2
   drop table #LOTTABLEVALIDATION
 END
 
+

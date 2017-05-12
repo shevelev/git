@@ -1,4 +1,4 @@
--- =============================================
+	-- =============================================
 -- Author:		Dr.MoPo3ilo
 -- Create date: 2008-12-19
 -- Description:	ѕолучение списка номеров документов из RECEIPT.externreceiptkey
@@ -42,4 +42,5 @@ END
 select externreceiptkey from @tbl
  
 END
+
 

@@ -23,3 +23,4 @@ where RD.RECEIPTKEY like '' + @asn+''
 GROUP BY R.RECEIPTKEY,ST.COMPANY, 
 		st1.COMPANY, p.sellername,  
 		p.EXTERNPOKEY,RD.STORERKEY 
+

@@ -10,7 +10,7 @@ set @maxLevels = 10
 
 create table #rez (caseid varchar(12), childid varchar(12),dropid varchar(12), addwho varchar(20), adddate datetime)
 
-select distinct pd.CASEID, pd.dropid into #orders from wh1.PICKDETAIL pd where ORDERKEY=@ord
+select distinct pd.CASEID, pd.dropid into #orders from wh1.PICKDETAIL pd where ORDERKEY='0000233662'
 
 while exists(select top 1 * from #orders)
 	begin

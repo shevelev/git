@@ -54,7 +54,7 @@ begin
 	
 	select dbo.udf_get_date_from_datetime(p.EDITDATE) as EDITDATE, 1 as COLUMN_ID, 'Приемка' as HDR1, 'Строки' as HDR2, p.POKEY + p.POLINENUMBER as ID, 0 as STDCUBE
 	from wh1.PODETAIL p with (NOLOCK,NOWAIT)
-	where EXTERNPOKEY='' and EXTERNLINENO='' 
+	where EXTERNPOKEY!='' and EXTERNLINENO!='' 
 	--p.WHSEID = 'dbo'
 		and ( @date_from is NULL or p.EDITDATE >= @date_from )
 		and ( @date_to is NULL or p.EDITDATE < @date_to )
@@ -65,7 +65,7 @@ begin
 	select dbo.udf_get_date_from_datetime(p.EDITDATE), 2 as COLUMN_ID, 'Приемка' as HDR1, 'Объем, м3' as HDR2, NULL as ID, s.STDCUBE * p.QTYRECEIVED
 	from wh1.PODETAIL p with (NOLOCK,NOWAIT)
 		join wh1.SKU s on s.STORERKEY = p.STORERKEY and s.SKU = p.SKU
-	where EXTERNPOKEY='' and EXTERNLINENO='' 
+	where EXTERNPOKEY!='' and EXTERNLINENO!='' 
 	--p.WHSEID = 'dbo'
 		and ( @date_from is NULL or p.EDITDATE >= @date_from )
 		and ( @date_to is NULL or p.EDITDATE < @date_to )

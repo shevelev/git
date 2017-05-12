@@ -50,3 +50,4 @@ exec(@sql)
 drop table #invtt
 drop table #itogi
 drop table #test
+

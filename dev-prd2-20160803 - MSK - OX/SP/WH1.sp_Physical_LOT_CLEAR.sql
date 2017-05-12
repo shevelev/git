@@ -153,4 +153,3 @@ if object_id('tempdb..#tmpMaxInvent') is not null drop table #tmpMaxInvent
 --=============================================================================================
 END
 
-

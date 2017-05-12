@@ -53,8 +53,10 @@ UPDATE #tmp
 						GROUP BY SKU),0)	
 	 FROM #tmp e
 
-SELECT *
-FROM #tmp
+
+select t.EXTERNPOKEY, t.POKEY, t.SKU, t.DESCRIPTION, t.UOM, t.SKU_CUBE, t.SKU_WGT, t.QTYORDERED,t.QTYRECEIVED, t.QTYREJECTED, s.NOTES1 SKUDESCRIPTION
+from #tmp t
+join wh1.sku s on s.SKU=t.sku
 
 DROP TABLE #tmp
 

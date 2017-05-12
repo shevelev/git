@@ -1,10 +1,6 @@
-
-/*********************************************************************************************************/
-
-
 -- ПОДТВЕРЖДЕНИЕ ОКОНЧАНИЯ КОНТРОЛЯ ЗАКАЗА
 
-ALTER PROCEDURE [WH2].[proc_DA_PickControlCaseCompleted](
+ALTER PROCEDURE [wh2].[proc_DA_PickControlCaseCompleted](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
 )AS
@@ -20,8 +16,8 @@ declare	@caseid varchar (10) -- номер кейса
 --declare	@transmitlogkey varchar (10)
 --set @transmitlogkey = '0016605187'
 
-declare @bs varchar(3) select @bs = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
-declare @bsanalit varchar(3) select @bsanalit = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
+declare @bs varchar(3) select @bs = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
+declare @bsanalit varchar(3) select @bsanalit = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
 
 create table #case (
 	caseid varchar (20),
@@ -68,13 +64,13 @@ declare @n bigint
 
 
 select  @orderkey = tl.key1 
-from	WH2.transmitlog tl 
+from	wh2.transmitlog tl 
 where	tl.transmitlogkey = @transmitlogkey
 
 
 select	key4
 into	#tr
-from	WH2.transmitlog
+from	wh2.transmitlog
 where	TABLENAME in ('pickcontrolcasecompleted','customerorderlinepacked','customerorderpacked')
 	and KEY1 = @orderkey
 	and KEY4 = '1'
@@ -90,7 +86,7 @@ END
 if @orderkey <> ''
 BEGIN
 	
-	--if (select count(*) from WH2.orders where ORDERKEY = @orderkey and susr2 >= '6') != 0
+	--if (select count(*) from wh2.orders where ORDERKEY = @orderkey and susr2 >= '6') != 0
 	--begin
 	--	print 'повторная упаковка заказа'
 	--	set @send_error = 1
@@ -101,14 +97,14 @@ BEGIN
 	print 'выборка отборов по заказу'
 	insert into #case
 	select	caseid, PICKDETAILKEY, LOC,  null, null,status, null, null, null, null, null
-	from	WH2.PICKDETAIL 
+	from	wh2.PICKDETAIL 
 	where	ORDERKEY = @orderkey and QTY>0
 
 	-- если есть запись в ITRN то заполняем ячейку ИЗ
 	update	c 
 	set	loci = i.fromloc
 	from	#case c 
-		left join WH2.ITRN i 
+		left join wh2.ITRN i 
 		    on i.SOURCEKEY = c.pickdetailkey
 	where	TRANTYPE = 'MV'
 
@@ -122,9 +118,9 @@ BEGIN
 	set	c.zone = pz.PUTAWAYZONE, 
 		c.control = pz.CARTONIZEAREA
 	from	#case c 
-		join WH2.LOC l 
+		join wh2.LOC l 
 		    on c.loc = l.LOC
-		join WH2.PUTAWAYZONE pz 
+		join wh2.PUTAWAYZONE pz 
 		    on pz.PUTAWAYZONE = l.PUTAWAYZONE
 
 	-- статус проконтроллированности кейса.
@@ -133,7 +129,7 @@ BEGIN
 		c.run_allocation = p.RUN_ALLOCATION, 
 		c.run_cc = p.RUN_CC
 	from	#case c 
-		left join WH2.pickcontrol p 
+		left join wh2.pickcontrol p 
 		    on c.caseid = p.caseid
 
 	print 'проверка заказа'
@@ -185,15 +181,15 @@ BEGIN
 				declare @boxnumP float
 				select distinct caseid, control into #casedist from #case
 				select @boxnum = SUM (isnull(boxnum,0))
-					from WH2.pickcontrol_label pc join #casedist c on pc.caseid = c.caseid 
+					from wh2.pickcontrol_label pc join #casedist c on pc.caseid = c.caseid 
 					where c.control = 'K'
 					
 	
 			
 				select @boxnumP = isnull(sum(pd.qty /cast(isnull(p.CASECNT,1) as float)),0) from 
-						#casedist c join WH2.pickdetail pd on c.caseid = pd.caseid
-						join WH2.lotattribute la on pd.lot = la.lot
-						left join WH2.PACK p on p.PACKKEY = la.lottable01
+						#casedist c join wh2.pickdetail pd on c.caseid = pd.caseid
+						join wh2.lotattribute la on pd.lot = la.lot
+						left join wh2.PACK p on p.PACKKEY = la.lottable01
 						where c.control != 'K'
 				set @boxnum=isnull(@boxnum,0)+isnull(@boxnumP,0)	
 				
@@ -213,91 +209,109 @@ BEGIN
 				o.susr3,
 				o.C_CONTACT1,
 				o.REQUESTEDSHIPDATE,
-				--o.susr4,
-				--o.susr5,
 				od.sku,
 				od.packkey,
-				case when od.LOTTABLE02 = '' then 'бс' else      od.LOTTABLE02      end AS LOTTABLE02, --od.LOTTABLE02, 
+				case when od.LOTTABLE02 = '' then 'бс' else      od.LOTTABLE02      end AS LOTTABLE02,
+				--od.LOTTABLE02, 
 				convert(varchar(12),ISNULL(od.lottable04,'19000101'),112) as LOTTABLE04, --od.LOTTABLE04, 
 				convert(varchar(12),ISNULL(od.lottable05,'19000101'),112) as LOTTABLE05, --od.LOTTABLE05, 
-				od.NOTES, --Изменено на 7 атрибут, в 6 атрибуте стоит left(25 От партии дакс)
-				--case when od.LOTTABLE02 = @bs then @bsanalit else od.LOTTABLE02 end,
-				--case when od.LOTTABLE02 = '' then @bsanalit else od.LOTTABLE02 end,
-				--convert(varchar(20),od.LOTTABLE04,120),
-				--convert(varchar(20),od.LOTTABLE05,120),
+				od.NOTES, 
 				od.openqty as [openqty],
 				case when od.QTYPICKED = 0 then od.SHIPPEDQTY else od.QTYPICKED end as [packedqty],
-				--convert(varchar(20),o.editdate,120)--,
 				@boxnum as boxnum
-				--od.externlineno,
-				--sum(t.qty) packedqty,
-				--isnull(o.transportationmode,'0') shippingfinished,
-				--isnull(od.lottable03,'') stage,
-				--isnull(od.susr4,'') rma
-			from	WH2.orders o 
-				join WH2.orderdetail od 
+			from	wh2.orders o 
+				join wh2.orderdetail od 
 				    on o.orderkey = od.orderkey
-	--			join #tmp t on t.orderkey = o.orderkey and t.orderlinenumber = od.orderlinenumber -- and t.sku = od.sku and t.storerkey = od.storerkey
 			where	o.orderkey = @orderkey
         		
-        		
+select * from #result
         		
 			update	pd 
 			set	pd.pdudf1 = '6'
-			from	WH2.pickdetail pd 
+			from	wh2.pickdetail pd 
 			where	pd.ORDERKEY = @orderkey
         		
-			update	WH2.orders 
+			update	wh2.orders 
 				set STATUS = case when STATUS < '78'  then '78' else STATUS end 
 			where	ORDERKEY = @orderkey 
 			--	and SUSR2 != '9'
 				
 				
-			update	WH2.TRANSMITLOG
+			update	wh2.TRANSMITLOG
 			set	KEY4 = '1'
 			where	TRANSMITLOGKEY = @transmitlogkey
         				
-			insert into WH2.ORDERSTATUSHISTORY (whseid, orderkey, orderlinenumber, ordertype,status, adddate, addwho, comments)
-			select 'WH2', @orderkey, '', 'SO', '78', GETDATE(), 'DataAdapter', 'Ручной статус контроля'
+			insert into wh2.ORDERSTATUSHISTORY (whseid, orderkey, orderlinenumber, ordertype,status, adddate, addwho, comments)
+			select 'wh2', @orderkey, '', 'SO', '78', GETDATE(), 'DataAdapter', 'Ручной статус контроля'
         		
 			print 'выгружаем результат в DAX'
+        	
+        	select * from #result
+        	
+        	-- Шапка для обновления статуса, на скомплектовано
+				update daxTable
+						set	daxTable.status = '26',
+							daxTable.boxnum = r.boxnum
+							--daxTable.daxstatus = '26'
+					from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT] daxTable
+					join #result r on 
+						daxTable.docid	= r.externorderkey	-- Внешний номер
+				
+				if @@ROWCOUNT <> 0
+				begin
+				-- Детали для обновления статуса+кол-во скомплектованного в деталях.		
+					update dax
+							set dax.pickedqtyinfor = r.packedqty,
+								dax.status = '26'
+						from [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT] dax
+						join #result r on 
+							dax.docid	= r.externorderkey and	-- Внешний номер
+							dax.itemid	= r.sku and				-- Товар
+							--dax.inventserialid = r.LOTTABLE02 and	-- Серия
+							dax.inventserialid = case when r.LOTTABLE02 = '' then 'бс' else r.LOTTABLE02 end and	-- Серия
+							dax.INVENTEXPIREDATE = convert(varchar(12),ISNULL(r.lottable05,'19000101'),112) and
+							dax.inventlocationid = r.susr1 --and	-- Склад
+							--dax.ORDEREDQTYDAX = r.openqty		-- заказанное кол-во
+							
+					where r.orderkey = @orderkey	
+				end
+        	
+			
+			------select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+			------from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT]
+			
+			------insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONTABLE_SHIPMENT]
+			------(dataareaid,INFORDAXSYSTEM,docid,doctype, CUSTVENDAC,inventlocationid,status,daxstatus,WMSPickingRouteId , boxnum,recid)
+			--------(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
+			--------consigneeaccount_ru,inventlocationid,status,boxcount,recid)
+	    		
+			------select	distinct 'SZ','1', externorderkey,[type], 
+			------	consigneekey,susr1 as inventlocationid, '26' as status, '5' as daxstatus,susr2,boxnum,@n + 1 as recid
+			------from	#result
         		
-
-			select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
-        		
-			insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
-			(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
-			consigneeaccount_ru,inventlocationid,status,boxcount,recid)
-        		
-			select	distinct 'SZ',externorderkey,[type],susr3 as invoiceid,c_contact1 as salesidbase,susr2 as wmspickingrouteid,REQUESTEDSHIPDATE,
-				consigneekey,susr1 as inventlocationid, '5' as status,boxnum,@n + 1 as recid
-			from	#result
-        		
-			if @@ROWCOUNT <> 0
-			begin
-				select	identity(int,1,1) as id,
-					'SZ' as dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],susr1 as inventlocationid,lottable06,
-					lottable02,lottable05,lottable04,
-					 '5' as status
-				into	#e
-				from	#result
+			------if @@ROWCOUNT <> 0
+			------begin
+			------select	identity(int,1,1) as id,
+			------		'SZ' as dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],susr1 as inventlocationid,lottable06,
+			------		lottable02,lottable05,lottable04,susr2,
+			------		 '26' as status
+			------	into	#e
+			------	from	#result
         			
-				select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-				from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			------	select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
+			------	from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT]
         		
         		
-				insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
-				(dataareaid,docid,salesidbase,itemid,salesqty,orderedqty,inventlocationid,inventbatchid,
-				inventserialid,inventexpiredate,inventserialproddate,
-				status,recid)
+			------	insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].[INFORINTEGRATIONLINE_SHIPMENT]
+			------	(dataareaid,docid,itemid,[ORDEREDQTYDAX],[PICKEDQTYINFOR],inventlocationid,
+			------	inventserialid,inventexpiredate,status, daxstatus,WMSPickingRouteId,recid)
                 		
-				select	dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],inventlocationid,lottable06,
-					lottable02,lottable05,lottable04,
-					status, @n + id as recid
-				from	#e
+			------	select	dataareaid,externorderkey,sku,[openqty],[packedqty],inventlocationid,
+			------		lottable02,lottable05, status,'5' as daxstatus, susr2,@n + e.id as recid
+			------	from	#e e
+			
         				
-			end		
+			------end		
         		
 			print 'выгружаем результат датадаптеру'
 			if @log=1
@@ -332,12 +346,12 @@ BEGIN
         	
 		print 'выгружаем результат с Ошибкой в DAX'
  
- --select * from  [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking      	
+ --select * from  [SPB-SQL1210DBE\MSSQLDBE]].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking      	
 
 		select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking	
         	
-		insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
+		insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
 		(dataareaid,docid,doctype,invoiceid,salesidbase,wmspickingrouteid,demandshipdate,
 		consigneeaccount_ru,inventlocationid,status,recid,error)
         	
@@ -347,7 +361,7 @@ BEGIN
         	
 		if @@ROWCOUNT <> 0
 		begin
-			select	identity(int,1,1) as id,
+				select	identity(int,1,1) as id,
 				'SZ' as dataareaid,externorderkey,c_contact1,sku,[packedqty],[openqty],susr1 as inventlocationid,lottable06,
 				lottable02,lottable05,lottable04,
 				 '15' as status
@@ -355,10 +369,10 @@ BEGIN
 			from	#result
         		
 			select	@n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-			from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
         	
         	
-			insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
+			insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderlinespic
 			(dataareaid,docid,salesidbase,itemid,salesqty,orderedqty,inventlocationid,inventbatchid,
 			inventserialid,inventexpiredate,inventserialproddate,
 			status,recid,error)
@@ -367,6 +381,7 @@ BEGIN
 				lottable02,lottable05,lottable04,
 				status, @n + id as recid,@msg_errdetails as error
 			from	#ee
+			
         			
 		end
 	end
@@ -395,6 +410,4 @@ IF OBJECT_ID('tempdb..#casedist') IS NOT NULL DROP TABLE #casedist
 ----
 ----
 ----
-
-
 

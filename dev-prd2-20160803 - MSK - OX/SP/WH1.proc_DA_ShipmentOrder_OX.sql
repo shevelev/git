@@ -1,5 +1,3 @@
-
-
 -- гн --
 ALTER PROCEDURE [WH1].[proc_DA_ShipmentOrder_OX]
 	@id int
@@ -362,9 +360,9 @@ BEGIN TRY
 								--else
 								--BEGIN
 									select	@maxid = max(cast(recid as int)) 
-									from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									
-									insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									(dataareaid, docid, doctype, operationtypeheader, invoiceid,
 									salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
 									inventlocationid, --pickoperation, 
@@ -386,9 +384,9 @@ BEGIN TRY
 									--BEGIN
 										
 										select	@maxid = max(cast(recid as int)) 
-										from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										
-										insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										(dataareaid,salesidbase,docid,itemid,wmsrouteid,
 										operationtypeheader,orderedqty,inventlocationid,
 										inventbatchid,inventserialid,inventexpiredate,
@@ -450,9 +448,9 @@ BEGIN TRY
 								--BEGIN
 									
 									select	@maxid = max(cast(recid as int)) 
-									from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									
-									insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
+									insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdateOrders
 									(dataareaid, docid, doctype, operationtypeheader, invoiceid,
 									salesidbase,wmspickingrouteid, demandshipdate, consigneeAccount_ru,
 									inventlocationid, --pickoperation, 
@@ -474,9 +472,9 @@ BEGIN TRY
 									--BEGIN
 										
 										select	@maxid = max(cast(recid as int)) 
-										from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										
-										insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
+										insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputUpdOrderlines
 										(dataareaid,salesidbase,docid,itemid,wmsrouteid,
 										operationtypeheader,orderedqty,inventlocationid,
 										inventbatchid,inventserialid,inventexpiredate,
@@ -827,7 +825,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.DocId
 		where	s.status = '5'
@@ -836,7 +834,7 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
 			join #DA_ShipmentOrderHead d
 				on d.externorderkey = s.DocId				
 		where	s.status = '5'
@@ -874,7 +872,7 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpOutputOrderLinesToWMS s
 			join #DA_ShipmentOrderHead d
 			    on d.externorderkey = s.DocId
 		where	s.status = '5'
@@ -882,7 +880,7 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpOutputOrdersToWMS s
 			join #DA_ShipmentOrderHead d
 				on d.externorderkey = s.DocId				
 		where	s.status = '5'
@@ -915,3 +913,4 @@ end
 IF OBJECT_ID('tempdb..#DA_ShipmentOrderHead') IS NOT NULL DROP TABLE #DA_ShipmentOrderHead
 IF OBJECT_ID('tempdb..#DA_ShipmentOrderDetail') IS NOT NULL DROP TABLE #DA_ShipmentOrderDetail
 IF OBJECT_ID('tempdb..#id') IS NOT NULL DROP TABLE #id
+

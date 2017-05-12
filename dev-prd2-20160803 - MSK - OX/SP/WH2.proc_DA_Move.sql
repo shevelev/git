@@ -1,7 +1,4 @@
-
-/***************************************************************************************************/
-
-ALTER PROCEDURE [WH2].[proc_DA_Move](
+ALTER PROCEDURE [wh2].[proc_DA_Move](
 	@wh varchar(10),
 	@transmitlogkey varchar (10)
 )AS
@@ -12,8 +9,8 @@ ALTER PROCEDURE [WH2].[proc_DA_Move](
 --declare @lost varchar(50) set @lost = '35'
 --declare @tamg varchar(50) set @tamg = '4'
 
---declare @bs varchar(3) select @bs = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
---declare @bsanalit varchar(3) select @bsanalit = short from WH2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
+--declare @bs varchar(3) select @bs = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bs'
+--declare @bsanalit varchar(3) select @bsanalit = short from wh2.CODELKUP where LISTNAME='sysvar' and CODE = 'bsanalit'
 
 --3    __Сильнодействующие
 --1    1 Склад
@@ -84,12 +81,16 @@ create table #resultall (
 
 select	loc,l.PUTAWAYZONE
 into	#lo
-from	WH2.LOC l
+from	wh2.LOC l
+
+
+	INSERT INTO DA_InboundErrorsLog (source,msg_errdetails) 
+	SELECT 'MOVE-wh2', GETDATE()
 
 
 --select *
 --into	#task
---from	WH2.TASKDETAIL t
+--from	wh2.TASKDETAIL t
 --where	t.TASKTYPE = 'MV'
 
 
@@ -123,10 +124,10 @@ select	'SZ' as dataareaid,
 	i.LOTTABLE02 as inventserialid,
 	i.LOTTABLE02 as corrinventserialid
 into	#q	
-from	WH2.TRANSMITLOG t
-	join WH2.itrn i 
+from	wh2.TRANSMITLOG t
+	join wh2.itrn i 
 	    on t.key1 = i.itrnkey
-	join WH2.LOTATTRIBUTE la
+	join wh2.LOTATTRIBUTE la
 	    on la.LOT = i.LOT
 	join #lo l 
 	    on l.loc = i.toloc 
@@ -136,16 +137,16 @@ from	WH2.TRANSMITLOG t
 	    on w.zone = l.putawayzone 
 	left join wh2.WHTOZONE w2 
 	    on w2.zone = l2.putawayzone
-	--join WH2.LOT l3
+	--join wh2.LOT l3
 	--    on l3.LOT = i.LOT
-where	t.TRANSMITLOGKEY = @transmitlogkey
+where	t.TRANSMITLOGKEY = @transmitlogkey and i.QTY>0
 	--and w.sklad <> w2.sklad
 	
 	update r       --------=========== Обновление СД, при перемещение из ячеек приемки(Склад продаж) в зону СД ============-------------
 		set r.inventlocationid = 'СД'
 	from #q r
-		join WH2.ITRN i on r.ITRNKEY=i.ITRNKEY
-	join WH2.sku s on i.SKU=s.sku
+		join wh2.ITRN i on r.ITRNKEY=i.ITRNKEY
+	join wh2.sku s on i.SKU=s.sku
 	where i.fromloc in ('PRIEM','PRIEM_EA','PRIEM_PL') and s.FREIGHTCLASS='6'
 	
 	
@@ -154,7 +155,7 @@ if exists (select 1 from #q where toloc in ('test'))
 BEGIN
 	
 	select	@mess01 = t.MESSAGE01, @mess02 = t.MESSAGE02, @mastersystem = 0 -- @mastersystem = 'DAX'
-	from	WH2.TASKDETAIL t
+	from	wh2.TASKDETAIL t
 		join #q q
 		    on t.STORERKEY = '001'
 		    and t.SKU = q.SKU
@@ -287,8 +288,8 @@ else
 			orderedqty,
 			inventlocationid,
 			corrinventlocationid,
-			inventbatchid,
-			corrinventbatchid,
+			--inventbatchid,
+			--corrinventbatchid,
 			inventserialid,
 			corrinventserialid
 		)
@@ -308,8 +309,8 @@ else
 			orderedqty,
 			inventlocationid,
 			corrinventlocationid,
-			inventbatchid,
-			corrinventbatchid,
+			--inventbatchid,
+			--corrinventbatchid,
 			inventserialid,
 			corrinventserialid
 		from	#q
@@ -491,10 +492,10 @@ declare @n bigint
 
 
 select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 
 
-insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournal
+insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournal
 (DataAReaID, inventjournalnameid, transdate, inventjournalid, inventjournaltype,
  mastersystem,Status,RecID)
 
@@ -513,10 +514,10 @@ if @@ERROR = 0
 begin	    
 	    
     select  @n = isnull(max(cast(cast(recid as numeric) as bigint)),0)
-    from    [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    from    [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
 
 
-    insert into [spb-sql1202].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
+    insert into [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpInventjournaltrans
     (DataAReaID, inventjournalid, transdate,ItemID, manufacturedatefrom,manufacturedateto,inventexpiredate,corrinventexpiredate,
     OrderedQty,inventlocationid,corrinventlocationid,
     InventBatchID,corrinventbatchid,InventSerialID,corrinventserialid,mastersystem,Status,RecID)
@@ -570,6 +571,4 @@ from	#resultall
 IF OBJECT_ID('tempdb..#resultall') IS NOT NULL DROP TABLE #resultall
 IF OBJECT_ID('tempdb..#resulthead') IS NOT NULL DROP TABLE #resulthead
 IF OBJECT_ID('tempdb..#resultdetail') IS NOT NULL DROP TABLE #resultdetail
-
-
 

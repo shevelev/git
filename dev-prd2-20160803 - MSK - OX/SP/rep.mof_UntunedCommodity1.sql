@@ -74,3 +74,4 @@ exec (@sql)
 select * from #sku
 	drop table #sku
 
+

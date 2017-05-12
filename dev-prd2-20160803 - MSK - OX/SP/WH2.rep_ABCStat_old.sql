@@ -99,4 +99,3 @@ from #result R join #result2 R2 on (R.maxDay=R2.maxDay)
 
 END
 
-

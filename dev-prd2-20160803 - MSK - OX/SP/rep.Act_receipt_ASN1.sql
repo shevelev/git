@@ -242,6 +242,7 @@ exec(@sql)
 			left join #summary sm on sm.receiptkey = asn.receiptkey
 			left join WH1.STORER st on asn.STORERKEY=st.STORERKEY
 		--where asn.qtyexpected <> 0
+		order by asn.id
 	
 	
 	drop table #asn

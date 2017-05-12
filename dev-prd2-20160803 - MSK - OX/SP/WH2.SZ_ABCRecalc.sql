@@ -73,4 +73,3 @@ from WH2.sku sku join #ship S on (sku.storerkey=S.storerkey and sku.sku=S.sku)
 
 END
 
-

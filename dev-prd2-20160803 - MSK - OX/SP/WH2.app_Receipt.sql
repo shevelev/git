@@ -148,16 +148,16 @@ set receiptlinenumber=replicate('0',5-len(cast(id as varchar(5))))+cast(id as va
 --if @othertypes=0 
 --begin
 
-if exists(select 1 from #receiptdetail r1
-				join #receiptdetail r2 on 
-						r1.storerkey = r2.storerkey 
-					and r1.sku =r2.sku 
-					and r1.id < r2.id 
-					and r1.LOTTABLE06 != r2.LOTTABLE06 )
-begin
-raiserror ('Ошибка: Нельзя добавить одно ПУО (%s) одинаковые товары с различным атрибутом 6.',16,1,@receiptkey)
-return -1
-end
+--if exists(select 1 from #receiptdetail r1
+--				join #receiptdetail r2 on 
+--						r1.storerkey = r2.storerkey 
+--					and r1.sku =r2.sku 
+--					and r1.id < r2.id 
+--					and r1.LOTTABLE06 != r2.LOTTABLE06 )
+--begin
+--raiserror ('Ошибка: Нельзя добавить одно ПУО (%s) одинаковые товары с различным атрибутом 6.',16,1,@receiptkey)
+--return -1
+--end
 
 --end 
 ----------------------------------------------------------------------
@@ -275,5 +275,4 @@ drop table #receiptdetail
 end
 
 print '<<< app_Receipt <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
-
 

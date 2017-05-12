@@ -78,22 +78,22 @@ DECLARE @sql varchar(max)='
 	
 	INSERT INTO #request
 	SELECT CREATEDDATETIME, DOCID, STATUS,ERROR,9 
-	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersPicking
+	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].InforIntegrationTable_Shipment
 	WHERE CREATEDDATETIME BETWEEN '''+@date1+''' and '''+@date2+''' and ' + CASE WHEN @isError != 0 THEN 'Status = 15' else '1=1' END+'
 	
 	INSERT INTO #request
 	SELECT CREATEDDATETIME, DOCID, STATUS,ERROR,10  
-	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderLinesPic
+	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].InforIntegrationLine_Shipment
 	WHERE CREATEDDATETIME BETWEEN '''+@date1+''' and '''+@date2+''' and ' + CASE WHEN @isError != 0 THEN 'Status = 15' else '1=1' END+'
 	
 	INSERT INTO #request
 	SELECT CREATEDDATETIME, DOCID, STATUS,ERROR,11  
-	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrdersShip
+	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].InforIntegrationTable_Shipment
 	WHERE CREATEDDATETIME BETWEEN '''+@date1+''' and '''+@date2+''' and ' + CASE WHEN @isError != 0 THEN 'Status = 15' else '1=1' END+'
 	
 	INSERT INTO #request
 	SELECT CREATEDDATETIME, DOCID, STATUS,ERROR,12 
-	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ImpOutputOrderLineShip
+	FROM [SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].InforIntegrationLine_Shipment
 	WHERE CREATEDDATETIME BETWEEN '''+@date1+''' and '''+@date2+''' and ' + CASE WHEN @isError != 0 THEN 'Status = 15' else '1=1' END+'
 	
 	--INSERT INTO #request
@@ -163,10 +163,10 @@ ELSE BEGIN
 	SELECT 6, 'SZ_ImpInputOrderLinesFromWMS','DOCID' UNION
 	SELECT 7, 'SZ_ExpOutputOrdersToWMS','DOCID' UNION
 	SELECT 8, 'SZ_ExpOutputOrderLinesToWMS','DOCID' UNION
-	SELECT 9, 'SZ_ImpOutputOrdersPicking','DOCID' UNION
-	SELECT 10, 'SZ_ImpOutputOrderLinesPic','DOCID' UNION
-	SELECT 11, 'SZ_ImpOutputOrdersShip','DOCID' UNION
-	SELECT 12, 'SZ_ImpOutputOrderLineShip','DOCID' UNION
+	SELECT 9, 'InforIntegrationTable_Shipment','DOCID' UNION
+	SELECT 10, 'InforIntegrationLine_Shipment','DOCID' UNION
+	SELECT 11, 'InforIntegrationTable_Shipment','DOCID' UNION
+	SELECT 12, 'InforIntegrationLine_Shipment','DOCID' UNION
 	SELECT 13, 'SZ_ImpOutputUpdateOrders','DOCID' UNION
 	SELECT 14, 'SZ_ImpOutputUpdOrderlines','DOCID' UNION
 	SELECT 15, 'SZ_ImpInventjournaltrans','InventJournalId' UNION

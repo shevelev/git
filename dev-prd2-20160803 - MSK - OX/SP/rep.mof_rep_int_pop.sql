@@ -50,19 +50,19 @@ BEGIN
 		td.FROMLOC,
 		td.TOLOC,
 		'Пополнение склада' descr
-	from wh2.ORDERDETAIL od
-		join wh2.SKU s on s.SKU = od.sku
-		join wh2.ORDERS o
-			join wh2.LOADORDERDETAIL lo
-				--join wh2.STORER s on lo.CUSTOMER = s.STORERKEY
-				join wh2.LOADSTOP ls
-					join wh2.LOADHDR lh on ls.LOADID = lh.LOADID
+	from wh1.ORDERDETAIL od
+		join wh1.SKU s on s.SKU = od.sku
+		join wh1.ORDERS o
+			join wh1.LOADORDERDETAIL lo
+				--join wh1.STORER s on lo.CUSTOMER = s.STORERKEY
+				join wh1.LOADSTOP ls
+					join wh1.LOADHDR lh on ls.LOADID = lh.LOADID
 				on lo.LOADSTOPID = ls.LOADSTOPID
 			on o.ORDERKEY = lo.SHIPMENTORDERID
 		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09')
-		join wh2.TASKDETAIL td on od.SKU = td.SKU
-		join wh2.LOTATTRIBUTE l
-			left join wh2.PACK p on l.LOTTABLE01 = p.PACKKEY 
+		join wh1.TASKDETAIL td on od.SKU = td.SKU
+		join wh1.LOTATTRIBUTE l
+			left join wh1.PACK p on l.LOTTABLE01 = p.PACKKEY 
 		on l.LOT = td.LOT
 	where td.TASKTYPE = 'MV'
 		and td.[STATUS] = '0'
@@ -90,18 +90,18 @@ BEGIN
 		lxlx.LOC as FROMLOC,
 		'' as TOLOC,
 		'Размещение с EA_IN' descr
-	from wh2.ORDERDETAIL od
-		join wh2.SKU s on s.SKU = od.SKU
-		join wh2.ORDERS o
-			join wh2.LOADORDERDETAIL lo
-				--join wh2.STORER s on lo.CUSTOMER = s.STORERKEY
-				join wh2.LOADSTOP ls
-					join wh2.LOADHDR lh on ls.LOADID = lh.LOADID
+	from wh1.ORDERDETAIL od
+		join wh1.SKU s on s.SKU = od.SKU
+		join wh1.ORDERS o
+			join wh1.LOADORDERDETAIL lo
+				--join wh1.STORER s on lo.CUSTOMER = s.STORERKEY
+				join wh1.LOADSTOP ls
+					join wh1.LOADHDR lh on ls.LOADID = lh.LOADID
 				on lo.LOADSTOPID = ls.LOADSTOPID
 			on o.ORDERKEY = lo.SHIPMENTORDERID
 		on o.ORDERKEY = od.ORDERKEY and o.STATUS in ('02', '09')
-		join wh2.LOTxLOCxID lxlx on od.SKU = lxlx.SKU
-		join wh2.LOTATTRIBUTE l on l.LOT = lxlx.LOT
+		join wh1.LOTxLOCxID lxlx on od.SKU = lxlx.SKU
+		join wh1.LOTATTRIBUTE l on l.LOT = lxlx.LOT
 	where lxlx.LOC = 'EA_IN'
 		and lxlx.QTY > 0
 		and lxlx.ID = ''
@@ -109,10 +109,13 @@ BEGIN
 		and ( @sku is NULL or lxlx.SKU = @sku )
 		and ( @route is NULL or lh.[ROUTE] = @route )
 
-	select distinct * from #rezZz order by descr, notes1, originalqty desc
+	select orderkey, route, departuretime, sku, notes1, lot1, lot2, lot5, qty, fromloc,toloc, descr from #rezZz 
+	group by orderkey, route, departuretime, sku, notes1, lot1, lot2, lot5, qty, fromloc,toloc, descr
+	--order by descr, notes1, originalqty desc
 
 	drop table #rezZz
 
 END
+
 
 

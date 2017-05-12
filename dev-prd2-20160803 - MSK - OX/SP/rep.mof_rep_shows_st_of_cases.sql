@@ -61,3 +61,4 @@ group by pd.ADDDATE, pd.ROUTE, st.company, o.orderkey, o.externorderkey, pd.CASE
 print @sql
 exec(@sql)
 
+

@@ -57,3 +57,4 @@ WHERE pd.pokey=vr.pk and pd.SUSR4 like 'BRAKPRIEM'-- pd.qtyrejected != '0'
 select * from #vrpo
 
 drop table #vrpo
+

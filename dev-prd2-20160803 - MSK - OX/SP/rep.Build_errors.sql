@@ -93,6 +93,7 @@ begin
 	--	and ( @date_to is NULL or p.EDITDATE <= @date_to or pc.EDITDATE <= @date_to )
 	--	and p.QTY <> isnull(pc.QTY,0)
 	order by
+	
 		od.ORDERKEY,
 		od.ORDERLINENUMBER
 	

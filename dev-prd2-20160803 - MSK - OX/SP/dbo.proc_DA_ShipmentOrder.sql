@@ -12,28 +12,7 @@ declare @wh varchar(30), @id int
 			from dbo.DA_ShipmentOrderHead 
 			order by id desc
 			
-			--if @wh like 'MSK[_]%' 
-			--	begin
-			--		print '2'
-			--		exec [WH2].[proc_DA_ShipmentOrder] @id
-					
-			--	end
-			--else
-			--	begin
-			--		if @wh = 'ОтветХранениеПост'
-			--			begin
-			--				print '3'
-			--				exec [WH1].[proc_DA_ShipmentOrder_OX] @id
-							
-			--			end
-			--		else			
-			--			begin
-			--				print '1'
-			--				exec [WH1].[proc_DA_ShipmentOrder] @id
-							
-			--			end
-			--	end
-			
+				
 			if @wh like 'МС[_]Ответ%' 
 				begin
 					print 'МС-ОХ'
@@ -41,10 +20,10 @@ declare @wh varchar(30), @id int
 				end
 			else if	(@wh like 'МС[_]%' or @wh='Москва')
 				begin
-						print 'MC'
+						print 'Входим в ветку склад москва, дата: '  + convert(varchar(max),getdate())
 						exec [WH2].[proc_DA_ShipmentOrder] @id
 				end
-			if @wh like 'МР[_]Ответ%' 
+			else if @wh like 'МР[_]Ответ%' 
 				begin
 					print 'МР-ОХ'
 				end
@@ -52,7 +31,7 @@ declare @wh varchar(30), @id int
 				begin
 						print 'MР'
 				end
-			if @wh like 'КР[_]Ответ%' 
+			else if @wh like 'КР[_]Ответ%' 
 				begin
 					print 'КР-ОХ'
 				end
@@ -60,7 +39,7 @@ declare @wh varchar(30), @id int
 				begin
 						print 'КР'
 				end
-			if @wh like 'КЛ[_]Ответ%' 
+			else if @wh like 'КЛ[_]Ответ%' 
 				begin
 					print 'КЛ-ОХ'
 				end
@@ -77,6 +56,11 @@ declare @wh varchar(30), @id int
 				begin			
 					print 'SPB'
 					exec [WH1].[proc_DA_ShipmentOrder] @id
+				end
+			else
+				begin
+					print 'никуда не зашли'
+					return
 				end
 			
 	end

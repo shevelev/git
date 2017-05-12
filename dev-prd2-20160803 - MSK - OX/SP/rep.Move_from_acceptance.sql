@@ -27,7 +27,7 @@ set @de = @de + convert(time,'23:59:59.997')
 end
 
 /*
-exec dbo.rep_check_obman_priem'20120801','20120830'
+exec [rep].[Move_from_acceptance] '20160101','20160902'
 */
 
  

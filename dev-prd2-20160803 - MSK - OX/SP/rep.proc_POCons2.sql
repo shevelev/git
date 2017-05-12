@@ -119,7 +119,7 @@ select	@activeReceipt activereceipt,
 			  then '-'
 			else ''
 		end operation,
-		WH1.GetFromCODELKUP('RECSTATUS',isnull(r.status,'0')) status,
+		WH1.GetFromCODELKUP('RECSTATUS',isnull(r.status,po.status)) status,
 		cast(isnull(r.status,'0') as int) statuscode,
 		round(sum(pod.qtyordered*pod.unitprice),2) DOCSUM,
 		round(sum(pod.qtyordered),2) DOCQTY,
@@ -132,7 +132,7 @@ from wh1.po po
 	left join wh1.storer st2 on (po.sellername=st2.storerkey)
 	left join wh1.receipt r on (po.otherreference=r.receiptkey)
 	left join wh1.podetail pod on (po.pokey=pod.pokey)
-	join wh1.CODELKUP ck on po.POTYPE=ck.CODE and LISTNAME='potype' and ck.CODE  in(0,1,2,3,4,5,8,9)
+	join wh1.CODELKUP ck on po.POTYPE=ck.CODE and LISTNAME='potype' and ck.CODE  in(0,1,2,3,4,5)
 where 
  po.podate between isnull(@dateLow,'19900101') and isnull(@dateHigh,getdate()+2)
  and po.POTYPE like '%'+isnull(@tp,'')+'%' and
@@ -149,7 +149,7 @@ group by	po.otherreference,
 			po.otherreference,
 			r.status,
 			r.editdate,
-			ck.DESCRIPTION,po.POTYPE
+			ck.DESCRIPTION,po.POTYPE, po.STATUS
 order by cast(isnull(r.status,'0') as int), po.podate
 
 select * from #result order by statuscode, podate

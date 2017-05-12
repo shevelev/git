@@ -17,3 +17,4 @@ select * from #sku2 where bad > 0
 
 drop table #sku2
 
+

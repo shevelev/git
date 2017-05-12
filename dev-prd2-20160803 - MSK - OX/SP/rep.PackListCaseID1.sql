@@ -3,7 +3,7 @@
 
 
 
-ALTER PROCEDURE [rep].[PackListCaseID1] (
+ALTER PROCEDURE [rep].[PackListCaseIDNew1] (
 /* 06 ”паковочный лист на €щик */
 	@wh varchar(30),
 	@order varchar(10),
@@ -95,9 +95,9 @@ SUM(pd.qty), 'шт' uom, s.DESCR, pd.sku, pd.ORDERKEY, pd.caseid, p.casecnt, stc.c
 from wh1.PICKDETAIL pd join wh1.SKU s on pd.SKU = s.sku
 join wh1.Storer st on pd.Storerkey = st.storerkey
 join wh1.PACK p on p.PACKKEY = s.packkey
-join wh1.ORDERS o on o.ORDERKEY = pd.orderkey and o.STORERKEY=pd.STORERKEY
+join wh1.ORDERS o on o.ORDERKEY = pd.orderkey
 join wh1.Storer stc on o.CONSIGNEEKEY = stc.storerkey
-join wh1.lotattribute la on pd.LOT = la.lot and pd.STORERKEY=la.STORERKEY
+join wh1.lotattribute la on pd.LOT = la.lot
 where pd.status in ('5','6', '7' ,'8') and 
 (pd.orderkey like case when @order != '' then @order else '%' end
 and pd.caseid like case when @caseid != '' then @caseid else '%' end)

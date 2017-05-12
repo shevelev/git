@@ -292,3 +292,4 @@ group by	o.storerkey,
 st2.ADDRESS1, st2.ADDRESS2, st2.ADDRESS3, st2.ADDRESS4
 --order by st_c.susr2, cast(o.status as int), o.RequestedShipDate
 
+

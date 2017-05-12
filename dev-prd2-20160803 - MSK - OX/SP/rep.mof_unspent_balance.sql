@@ -59,3 +59,4 @@ select * from #vr_t
 drop table #vr_t
 drop table #d_sku
 drop table #altsku2
+

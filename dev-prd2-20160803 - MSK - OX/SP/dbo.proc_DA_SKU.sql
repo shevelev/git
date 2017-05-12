@@ -1,4 +1,3 @@
-
 ALTER PROCEDURE [dbo].[proc_DA_SKU]
 	@source varchar(500) = null
 as  
@@ -48,7 +47,9 @@ BEGIN TRY
 
 		print ' обновление NULL значений'
 		update ds 
-		set	ds.storerkey = st.storer,
+		set	ds.storerkey = case    when (left(isnull(rtrim(ltrim(storerkey)),''),15)) = 'SZ' then '001' 
+					    else (left(isnull(rtrim(ltrim(storerkey)),''),15)) 
+					    end,
 			ds.sku = left(isnull(rtrim(ltrim(sku)),''),50),
 			ds.descr = left(isnull(rtrim(ltrim(descr)),''),250),
 			ds.busr1 = left(isnull(rtrim(ltrim(busr1)),''),30),
@@ -61,8 +62,6 @@ BEGIN TRY
 			--ds.stdcube = isnull(ds.stdcube,0),
 			--ds.stdgrosswgt = isnull(ds.stdgrosswgt,0),		
 		from #da_sku ds
-		join [dbo].[DA_StorerFolder] st on ds.storerkey=st.folder
-		
 		
 		print 'удаляем двойные кавычки'
 		update #da_sku 
@@ -75,35 +74,35 @@ BEGIN TRY
 		select 
 			@msg_errdetails1 = @msg_errdetails1 --storerkey EMPTY
 				+case when s.storerkey = ''
-					then 'SKU. STORERkey=empty'+@enter
+					then 'er#001SKU. STORERkey=empty'+@enter
 					else ''
 				end,
 			@msg_errdetails1 = @msg_errdetails1 --storerkey IN STORER
 				+case when (not exists(select top(1) ws.* from wh1.storer ws where ws.storerkey = s.storerkey)) 
-					then 'SKU. Владелец='+s.storerkey+' отсутвует в справочнике STORER.'+@enter
+					then 'er#002SKU. Владелец='+s.storerkey+' отсутвует в справочнике STORER.'+@enter
 					else '' 
 				end,
 			@msg_errdetails1 = @msg_errdetails1 --sku EMPTY
 				+case when s.sku = ''
-					then 'SKU. Владелец='+s.storerkey+' Товар=пустой.'+@enter
+					then 'er#003SKU. Владелец='+s.storerkey+' Товар=пустой.'+@enter
 					else ''
 				end,
 			@msg_errdetails1 = @msg_errdetails1 --allowupdate = 0
 				+case when (exists(select top(1) ws.serialkey from wh1.sku ws where ws.storerkey = s.storerkey and ws.sku = s.sku)
 					and @allowupdate = 0)
 					then 
-						'SKU. STORERkey='+s.storerkey+' SKU='+s.sku+'. Обновление запрещено.'+@enter
+						'er#004SKU. STORERkey='+s.storerkey+' SKU='+s.sku+'. Обновление запрещено.'+@enter
 					else ''
 				end,
 			@msg_errdetails1 = @msg_errdetails1 --skugroup in STRATEGYXSKU
 				+case when (not exists(select top(1) * from wh1.StrategyxSKU ss 
 							join wh1.CODELKUP c on c.SHORT = ss.CLASS and c.LISTNAME = 'FREIGHTCLS' where c.CODE = s.freightclass)) 
-					then 'SKU. Товар='+s.sku+', Владелец='+s.storerkey+'. КлассТовара='+s.freightclass+' отсутвует в справочнике wh1.StrategyxSku.'+@enter
+					then 'er#005SKU. Товар='+s.sku+', Владелец='+s.storerkey+'. КлассТовара='+s.freightclass+' отсутвует в справочнике wh1.StrategyxSku.'+@enter
 					else ''
 				end,
 			@msg_errdetails1 = @msg_errdetails1 --s.busr1 EMPTY
 				+case when s.busr1 = ''
-					then 'SKU. Товар='+s.sku+'Производитель=пустой'+@enter
+					then 'er#006SKU. Товар='+s.sku+'Производитель=пустой'+@enter
 					else ''
 				end,
 			--@msg_errdetails1 = @msg_errdetails1 --s.altsku EMPTY
@@ -113,12 +112,12 @@ BEGIN TRY
 			--	end,
 			@msg_errdetails1 = @msg_errdetails1 --s.altsku in another sku
 				+case when a.altsku is not null and a.sku <> s.sku
-					then 'SKU. Товар='+s.sku+', Владелец='+s.storerkey+ 'ШК принадлежит другому товару '+@enter
+					then 'er#007SKU. Товар='+s.sku+', Владелец='+s.storerkey+ 'ШК принадлежит другому товару '+@enter
 					else ''
 				end,				
 			@msg_errdetails1 = @msg_errdetails1 --s.busr1 IN STORER
 				+case when (not exists(select top(1) ws.* from wh1.storer ws where ws.storerkey = s.busr1)) 
-					then 'SKU. Товар='+s.sku+', Производитель='+s.busr1+' отсутвует в справочнике STORER.'+@enter
+					then 'er#008SKU. Товар='+s.sku+', Производитель='+s.busr1+' отсутвует в справочнике STORER.'+@enter
 					else '' 
 				end
 				
@@ -192,6 +191,15 @@ BEGIN TRY
 						set @msg_errdetails = @msg_errdetails+'WH1.SKU. sku='+@sku+', STORERkey='+@storerkey+'. Неудалось выполнить обновление сушествующей записи.'+char(10)+char(13)
 						set @send_error = 1
 					end
+					
+					
+					declare @transmitlogkey varchar(10)
+					exec dbo.DA_GetNewKey 'wh1','eventlogkey',@transmitlogkey output
+		
+					--ОТправка данных в аксапту, при обновление карточки товара.
+					insert wh1.transmitlog (whseid, transmitlogkey, tablename, ADDWHO,KEY1,key2) 
+					values ('WH1', @transmitlogkey, 'commodityupdated',  'commodityupdated',@sku,'001')
+					
 					
 					print ' обновляем WH2.sku='+@sku+', storer='+@storerkey
 					
@@ -314,59 +322,59 @@ BEGIN TRY
 			
 				if @msg_errdetails = '' --ошибок нет, вставляем ШК
 				begin
-				-----------Обработка заменяющего товара-----------------
-				select @altskuid = altskuid from #da_sku
-					print ' Основной товар ' + @sku + ' Заменяющий его ' + @altskuid
-					if @altskuid <> ''
-					begin						
-						if not exists (select 1 from wh1.SUBSTITUTESKU where sku = @sku and storerkey = @storerkey)
-						begin
-						    print ' вставляем новый Замещающий товар'
+				-------------Обработка заменяющего товара-----------------
+				--select @altskuid = altskuid from #da_sku
+				--	print ' Основной товар ' + @sku + ' Заменяющий его ' + @altskuid
+				--	if @altskuid <> ''
+				--	begin						
+				--		if not exists (select 1 from wh1.SUBSTITUTESKU where sku = @sku and storerkey = @storerkey)
+				--		begin
+				--		    print ' вставляем новый Замещающий товар'
 						    
-						    insert into wh1.SUBSTITUTESKU
-						    (whseid, SEQUENCE, storerkey, sku, SUBSTITUTESKU, packkey, uom,UOMQTY, QTY, SUBPACKKEY, SUBUOM, SUBUOMQTY, SUBQTY, STATUS, ADDWHO, EDITWHO)
-						    select 'WH1' as whseid, 1,
-							   @storerkey , 
-							   @sku, 
-							   @altskuid ,						     
-							   'STD' as packkey,		
-							    'EA' as uom,
-							   1, 1,'STD','EA',1,1,1,'AltSkuId','AltSkuId'
-						end		
-							else
-								begin
-									select 'В заменяющих товар уже есть. нужно его обновить'
-									update wh1.SUBSTITUTESKU
-										set SUBSTITUTESKU=@altskuid
-									where SKU=@sku
-								end		
+				--		    insert into wh1.SUBSTITUTESKU
+				--		    (whseid, SEQUENCE, storerkey, sku, SUBSTITUTESKU, packkey, uom,UOMQTY, QTY, SUBPACKKEY, SUBUOM, SUBUOMQTY, SUBQTY, STATUS, ADDWHO, EDITWHO)
+				--		    select 'WH1' as whseid, 1,
+				--			   @storerkey , 
+				--			   @sku, 
+				--			   @altskuid ,						     
+				--			   'STD' as packkey,		
+				--			    'EA' as uom,
+				--			   1, 1,'STD','EA',1,1,1,'AltSkuId','AltSkuId'
+				--		end		
+				--			else
+				--				begin
+				--					select 'В заменяющих товар уже есть. нужно его обновить'
+				--					update wh1.SUBSTITUTESKU
+				--						set SUBSTITUTESKU=@altskuid
+				--					where SKU=@sku
+				--				end		
 								
-						if not exists (select 1 from wh2.SUBSTITUTESKU where sku = @sku and storerkey = @storerkey)
-						begin
-						    print ' вставляем новый Замещающий товар'
+				--		if not exists (select 1 from wh2.SUBSTITUTESKU where sku = @sku and storerkey = @storerkey)
+				--		begin
+				--		    print ' вставляем новый Замещающий товар'
 						    
-						    insert into wh2.SUBSTITUTESKU
-						    (whseid, SEQUENCE, storerkey, sku, SUBSTITUTESKU, packkey, uom,UOMQTY, QTY, SUBPACKKEY, SUBUOM, SUBUOMQTY, SUBQTY, STATUS, ADDWHO, EDITWHO)
-						    select 'WH2' as whseid, 1,
-							   @storerkey , 
-							   @sku, 
-							   @altskuid ,						     
-							   'STD' as packkey,		
-							    'EA' as uom,
-							   1, 1,'STD','EA',1,1,1,'AltSkuId','AltSkuId'
-						end		
-							else
-								begin
-									select 'В заменяющих товар уже есть. нужно его обновить'
-									update wh2.SUBSTITUTESKU
-										set SUBSTITUTESKU=@altskuid
-									where SKU=@sku
-								end	
+				--		    insert into wh2.SUBSTITUTESKU
+				--		    (whseid, SEQUENCE, storerkey, sku, SUBSTITUTESKU, packkey, uom,UOMQTY, QTY, SUBPACKKEY, SUBUOM, SUBUOMQTY, SUBQTY, STATUS, ADDWHO, EDITWHO)
+				--		    select 'WH2' as whseid, 1,
+				--			   @storerkey , 
+				--			   @sku, 
+				--			   @altskuid ,						     
+				--			   'STD' as packkey,		
+				--			    'EA' as uom,
+				--			   1, 1,'STD','EA',1,1,1,'AltSkuId','AltSkuId'
+				--		end		
+				--			else
+				--				begin
+				--					select 'В заменяющих товар уже есть. нужно его обновить'
+				--					update wh2.SUBSTITUTESKU
+				--						set SUBSTITUTESKU=@altskuid
+				--					where SKU=@sku
+				--				end	
 										
-					end	
+				--	end	
 				
 				
-				-----------Обработка заменяющего товара-----------------
+				-------------Обработка заменяющего товара-----------------
 				
 				
 				
@@ -455,10 +463,11 @@ begin
 		
 		update	s
 		set	status = '15',
-			error = @msg_errdetails
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
-			join #da_sku d on d.sku = s.ItemID
-			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.Dataareaid
+			error = left (@msg_errdetails,200)
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
+			join #da_sku d
+			    on case when d.storerkey = '001' then 'SZ' else d.storerkey end = s.Dataareaid
+			    and d.sku = s.ItemID
 		where	s.status = '5'			
 		
 	--*************************************************************************
@@ -466,9 +475,10 @@ begin
 		update	s
 		set	status = '15',
 			error = @msg_errdetails
-		from	[SQL-dev].[PRD2].[dbo].DA_SKU_archive s
-			join #da_sku d on d.sku = s.sku
-			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.storerkey
+		from	[SQL-WMS].[PRD2].[dbo].DA_SKU_archive s
+			join #da_sku d
+			    on case when d.storerkey = '001' then 'SZ' else d.storerkey end = s.storerkey				
+			    and d.sku = s.sku
 		where	s.status = '5'	
 		
 
@@ -487,18 +497,20 @@ begin
 		
 		update	s
 		set	status = '10'
-		from	[spb-sql1202].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
-			join #da_sku d on  d.sku = s.ItemID
-			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.Dataareaid
+		from	[SPB-SQL1210DBE\MSSQLDBE].[DAX2009_1].[dbo].SZ_ExpItemToWMS s
+			join #da_sku d
+			    on case when d.storerkey = '001' then 'SZ' else d.storerkey end = s.Dataareaid
+			    and d.sku = s.ItemID
 		where	s.status = '5'
 		
 	--*************************************************************************
 
 		update	s
 		set	status = '10'
-		from	[SQL-DEV].[PRD2].[dbo].DA_SKU_archive s
-			join #da_sku d on d.sku = s.sku				
-			join [dbo].[DA_StorerFolder] st  on st.storer=d.storerkey and st.folder=s.storerkey
+		from	[SQL-WMS].[PRD2].[dbo].DA_SKU_archive s
+			join #da_sku d
+			    on case when d.storerkey = '001' then 'SZ' else d.storerkey end = s.storerkey				
+			    and d.sku = s.sku				
 		where	s.status = '5'
 
 
@@ -506,13 +518,4 @@ begin
 end
 
 IF OBJECT_ID('tempdb..#da_sku') IS NOT NULL DROP TABLE #da_sku
-
-
-
-
-
-
-
-
-
 

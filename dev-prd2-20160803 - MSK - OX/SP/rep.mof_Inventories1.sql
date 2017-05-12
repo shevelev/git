@@ -118,3 +118,4 @@ group by sku, skuname, storername, carriername, skutype, skuTypeName,
 	drop table #result
 	DROP TABLE #SKU
 
+
